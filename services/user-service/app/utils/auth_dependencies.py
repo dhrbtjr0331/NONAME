@@ -1,13 +1,11 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
+from datetime import datetime
 from app.schemas.user import UserBasicInfo
+from app.config.settings import settings
 
 security = HTTPBearer()
-
-# These should match your auth-service settings
-SECRET_KEY = "your-secret-key-here"  # Should come from shared config
-ALGORITHM = "HS256"
 
 async def get_current_user_info(
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -18,24 +16,58 @@ async def get_current_user_info(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
+    token = credentials.credentials
+    
+    # DEBUG: Print token info
+    print(f"Received token (first 50 chars): {token[:50]}...")
+    print(f"Using SECRET_KEY: {settings.SECRET_KEY[:10]}...")
+    print(f"Using ALGORITHM: {settings.ALGORITHM}")
+    
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = int(payload.get("sub"))
-        email: str = payload.get("email")
-        is_manufacturer: bool = payload.get("is_manufacturer")
+        # FIXED: Proper way to decode without verification
+        unverified_payload = jwt.decode(
+            token, 
+            key="", 
+            algorithms=[settings.ALGORITHM], 
+            options={"verify_signature": False}
+        )
+        print(f"Unverified payload: {unverified_payload}")
+        
+        # Check expiration
+        exp_timestamp = unverified_payload.get("exp")
+        if exp_timestamp:
+            exp_time = datetime.fromtimestamp(exp_timestamp)
+            current_time = datetime.utcnow()
+            print(f"Token expires at: {exp_time}")
+            print(f"Current time: {current_time}")
+            print(f"Token expired: {current_time > exp_time}")
+        
+        # Now try with verification
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        print(f"Verified payload: {payload}")
+        
+        if payload.get("type") != "access":
+            print(f"Wrong token type: {payload.get('type')}")
+            raise credentials_exception
+        
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        is_manufacturer = payload.get("is_manufacturer")
         
         if user_id is None or email is None:
+            print("Missing user_id or email in token")
             raise credentials_exception
             
         return UserBasicInfo(
-            user_id=user_id,
+            user_id=int(user_id),
             email=email,
             is_manufacturer=is_manufacturer,
-            is_verified=True  # Assume verified if token is valid
+            is_verified=True
         )
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT Error: {e}")
         raise credentials_exception
-
+    
 async def get_current_manufacturer(
     current_user: UserBasicInfo = Depends(get_current_user_info)
 ) -> UserBasicInfo:

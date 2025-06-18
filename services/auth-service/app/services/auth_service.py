@@ -4,6 +4,7 @@ from app.models.user import User
 from app.schemas.auth import UserRegister, UserLogin
 from app.utils.password_helpers import hash_password, verify_password
 from app.utils.jwt_handler import create_access_token, create_refresh_token
+from typing import Optional
 
 class AuthService:
     def __init__(self, db: AsyncSession):
@@ -28,12 +29,16 @@ class AuthService:
         await self.db.refresh(new_user)
         return new_user
 
-    async def authenticate_user(self, credential: UserLogin) -> User:
+    async def authenticate_user(self, credential: UserLogin) -> Optional[User]:
         result = await self.db.execute(select(User).where(User.email == credential.email))
         user = result.scalar_one_or_none()
         
-        if not user or not verify_password(credential.password, user.password_hash):
-            raise ValueError("Invalid credentials")
+        if not user:
+            return None
+
+        password_valid = verify_password(credential.password, user.password_hash)      
+        if not password_valid:
+            return None
         
         return user
 
