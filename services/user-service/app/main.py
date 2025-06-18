@@ -1,3 +1,11 @@
+import sys
+import os
+
+# Add the current service directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+service_dir = os.path.dirname(current_dir)
+sys.path.insert(0, service_dir)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import users, companies

@@ -8,6 +8,7 @@ from app.utils.jwt_handler import verify_token
 from app.models.user import User
 from sqlalchemy.future import select
 from app.utils.auth_dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
@@ -76,7 +77,7 @@ async def refresh_token(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(current_user: User = Depends(get_current_user)):
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 @router.post("/logout")
 async def logout():

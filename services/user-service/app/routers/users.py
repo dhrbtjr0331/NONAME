@@ -32,12 +32,13 @@ async def create_user_profile(
         )
     
 
-@router.get("/profile/{user_id}", response_model=UserProfileResponse)
+@router.get("/profile", response_model=UserProfileResponse)
 async def get_user_profile(
     current_user: UserBasicInfo = Depends(get_current_user_info),
     db: AsyncSession = Depends(get_db)
 ):
     user_service = UserService(db)
+    user_id: Optional[int] = current_user.user_id
     profile = await user_service.get_profile_by_user_id(user_id)
 
     if not profile:
