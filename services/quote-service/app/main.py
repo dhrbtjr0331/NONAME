@@ -10,8 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import rfqs, quotes
 from app.config.database import engine
-from app.models.rfq import Base as RFQBase
-from app.models.quote import Base as QuoteBase
+from app.models import Base  # Import shared Base
 
 app = FastAPI(title="Quote Service", version="1.0.0")
 
@@ -31,8 +30,9 @@ app.include_router(quotes.router)
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
-        await conn.run_sync(RFQBase.metadata.create_all)
-        await conn.run_sync(QuoteBase.metadata.create_all)
+        # Import models to ensure they're registered
+        from app.models import rfq, quote  # This registers the models
+        await conn.run_sync(Base.metadata.create_all)
 
 @app.get("/health")
 async def health_check():

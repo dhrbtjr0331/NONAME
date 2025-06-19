@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from app.config.database import get_db
-from app.dependencies.auth import get_current_user_info, get_current_supplier, get_current_manufacturer
+from app.utils.auth_dependencies import get_current_user_info, get_current_supplier, get_current_manufacturer
 from app.schemas.quote import QuoteCreate, QuoteUpdate, QuoteResponse, QuoteListItem, QuoteStatus
 from app.services.quote_service import QuoteService
 

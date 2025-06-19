@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, func
 from typing import List, Optional
 from datetime import datetime
 from app.models.rfq import RFQ, RFQStatus
@@ -107,17 +107,3 @@ class RFQService:
         await self.db.commit()
         await self.db.refresh(rfq)
         return rfq
-    
-    async def get_rfq_statistics(self, manufacturer_id: int) -> dict:
-        # Get counts by status
-        result = await self.db.execute(
-            select(RFQ.status, func.count(RFQ.id))
-            .where(RFQ.manufacturer_id == manufacturer_id)
-            .group_by(RFQ.status)
-        )
-        
-        stats = {status.value: 0 for status in RFQStatus}
-        for status, count in result.fetchall():
-            stats[status.value] = count
-        
-        return stats

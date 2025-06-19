@@ -4,16 +4,16 @@ from datetime import datetime
 from enum import Enum
 
 class RFQStatus(str, Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-    AWARDED = "awarded"
-    CANCELLED = "cancelled"
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    AWARDED = "AWARDED"
+    CANCELLED = "CANCELLED"
 
 class RFQPriority(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    URGENT = "urgent"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    URGENT = "URGENT"
 
 class RFQBase(BaseModel):
     title: str = Field(..., min_length=5, max_length=200)

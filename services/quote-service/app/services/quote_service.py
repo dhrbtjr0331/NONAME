@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import and_
+from sqlalchemy import and_, func, update
 from typing import List, Optional
 from datetime import datetime
 from app.models.quote import Quote, QuoteStatus

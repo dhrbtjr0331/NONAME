@@ -1,18 +1,16 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Enum, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 import enum
-
-Base = declarative_base()
+from app.models import Base
 
 class QuoteStatus(enum.Enum):
-    DRAFT = "draft"
-    SUBMITTED = "submitted"
-    UNDER_REVIEW = "under_review"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    WITHDRAWN = "withdrawn"
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
 
 class Quote(Base):
     __tablename__ = "quotes"

@@ -1,22 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Enum, Numeric, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Enum, Numeric
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 import enum
-
-Base = declarative_base()
+from app.models import Base
 
 class RFQStatus(enum.Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-    AWARDED = "awarded"
-    CANCELLED = "cancelled"
+    OPEN = "OPEN"          
+    CLOSED = "CLOSED"      
+    AWARDED = "AWARDED"    
+    CANCELLED = "CANCELLED" 
 
 class RFQPriority(enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    URGENT = "urgent"
+    LOW = "LOW"            
+    MEDIUM = "MEDIUM"      
+    HIGH = "HIGH"          
+    URGENT = "URGENT"      
 
 class RFQ(Base):
     __tablename__ = "rfqs"

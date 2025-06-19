@@ -4,12 +4,12 @@ from datetime import datetime
 from enum import Enum
 
 class QuoteStatus(str, Enum):
-    DRAFT = "draft"
-    SUBMITTED = "submitted"
-    UNDER_REVIEW = "under_review"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    WITHDRAWN = "withdrawn"
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
 
 class QuoteBase(BaseModel):
     unit_price: float = Field(..., gt=0)
