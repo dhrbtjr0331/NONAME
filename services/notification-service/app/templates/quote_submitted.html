@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Quote Received for {{ rfq_title }}</title>
+    <style>
+        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+        .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .quote-details { background-color: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .price-highlight { font-size: 24px; color: #28a745; font-weight: bold; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Quote Received!</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello {{ manufacturer_name }},</p>
+            
+            <p>Great news! You've received a new quote for your RFQ:</p>
+            
+            <div class="quote-details">
+                <h3>{{ rfq_title }}</h3>
+                <p><strong>Supplier:</strong> {{ supplier_name }}</p>
+                <div class="price-highlight">{{ currency }} {{ total_price }}</div>
+                <p><strong>Unit Price:</strong> {{ currency }} {{ unit_price }}</p>
+                <p><strong>Lead Time:</strong> {{ lead_time_days }} days</p>
+                {% if warranty_period %}
+                <p><strong>Warranty:</strong> {{ warranty_period }}</p>
+                {% endif %}
+            </div>
+            
+            {% if supplier_notes %}
+            <p><strong>Supplier Notes:</strong><br>
+            {{ supplier_notes }}</p>
+            {% endif %}
+            
+            <a href="{{ platform_url }}/rfqs/{{ rfq_id }}/quotes" class="button">Review All Quotes</a>
+            
+            <p>Compare quotes and choose the best supplier for your needs.</p>
+            
+            <p>Best regards,<br>
+            The Marketplace Team</p>
+        </div>
+        
+        <div class="footer">
+            <p><a href="{{ platform_url }}/notifications/preferences">Manage notification preferences</a></p>
+        </div>
+    </div>
+</body>
+</html>

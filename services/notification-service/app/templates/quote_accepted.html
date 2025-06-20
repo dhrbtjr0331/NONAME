@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Congratulations! Your Quote Was Accepted</title>
+    <style>
+        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+        .header { background-color: #ffc107; color: #212529; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .order-details { background-color: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #ffc107; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #ffc107; color: #212529; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Quote Accepted!</h1>
+        </div>
+        
+        <div class="content">
+            <p>Congratulations {{ supplier_name }}!</p>
+            
+            <p>Your quote has been accepted by {{ manufacturer_name }}. Here are the order details:</p>
+            
+            <div class="order-details">
+                <h3>{{ rfq_title }}</h3>
+                <p><strong>Order Value:</strong> {{ currency }} {{ total_price }}</p>
+                <p><strong>Manufacturer:</strong> {{ manufacturer_name }}</p>
+                <p><strong>Expected Lead Time:</strong> {{ lead_time_days }} days</p>
+                <p><strong>Payment Terms:</strong> {{ payment_terms }}</p>
+            </div>
+            
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+                <li>The manufacturer will contact you within 24 hours to finalize details</li>
+                <li>Prepare your production schedule</li>
+                <li>Ensure all certifications and documentation are ready</li>
+            </ul>
+            
+            <a href="{{ platform_url }}/orders/{{ quote_id }}" class="button">View Order Details</a>
+            
+            <p>Thank you for being part of our marketplace!</p>
+            
+            <p>Best regards,<br>
+            The Marketplace Team</p>
+        </div>
+        
+        <div class="footer">
+            <p><a href="{{ platform_url }}/notifications/preferences">Manage notification preferences</a></p>
+        </div>
+    </div>
+</body>
+</html>

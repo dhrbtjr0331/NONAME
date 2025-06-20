@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New RFQ: {{ rfq_title }}</title>
+    <style>
+        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .rfq-details { background-color: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New RFQ Available</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello {{ supplier_name }},</p>
+            
+            <p>A new Request for Quote (RFQ) has been posted that matches your business category:</p>
+            
+            <div class="rfq-details">
+                <h3>{{ rfq_title }}</h3>
+                <p><strong>Category:</strong> {{ product_category }}</p>
+                <p><strong>Quantity:</strong> {{ quantity }} {{ unit }}</p>
+                <p><strong>Quote Deadline:</strong> {{ quote_deadline.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                {% if target_price_range %}
+                <p><strong>Target Price Range:</strong> {{ target_price_range }}</p>
+                {% endif %}
+            </div>
+            
+            <p>{{ description[:200] }}{% if description|length > 200 %}...{% endif %}</p>
+            
+            <a href="{{ platform_url }}/rfqs/{{ rfq_id }}" class="button">View RFQ & Submit Quote</a>
+            
+            <p>Don't miss this opportunity to grow your business!</p>
+            
+            <p>Best regards,<br>
+            The Marketplace Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>You received this email because you're registered as a supplier in the {{ product_category }} category.</p>
+            <p><a href="{{ platform_url }}/notifications/preferences">Manage notification preferences</a></p>
+        </div>
+    </div>
+</body>
+</html>
