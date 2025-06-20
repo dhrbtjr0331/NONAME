@@ -1,0 +1,133 @@
+.App {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .main-content {
+    flex: 1;
+    padding-top: 20px;
+  }
+  
+  /* Dashboard specific styles */
+  .dashboard-stat {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .dashboard-stat .stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .dashboard-stat .stat-label {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  /* Status-specific colors */
+  .status-open {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .status-closed {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .status-awarded {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  .status-accepted {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .status-rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .status-draft {
+    background-color: #e2e3e5;
+    color: #383d41;
+  }
+  
+  .status-submitted {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .status-withdrawn {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .main-content {
+      padding-top: 10px;
+    }
+    
+    .dashboard-stat .stat-number {
+      font-size: 2rem;
+    }
+  }
+  
+  /* Loading states */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  /* Form enhancements */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .form-section {
+    margin-bottom: 30px;
+  }
+  
+  .form-section h4 {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  /* Button groups */
+  .button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  
+  @media (max-width: 768px) {
+    .button-group {
+      flex-direction: column;
+    }
+    
+    .button-group .btn {
+      width: 100%;
+    }
+  }
