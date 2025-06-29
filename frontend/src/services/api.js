@@ -1,39 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
-// Service URLs
-export const SERVICES = {
-  AUTH: `${API_BASE_URL}:8001`,
-  USER: `${API_BASE_URL}:8002`, 
-  QUOTE: `${API_BASE_URL}:8003`,
-  NOTIFICATION: `${API_BASE_URL}:8004`
-};
-
-// Create axios instances for each service
-export const authAPI = axios.create({
-  baseURL: SERVICES.AUTH,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-export const userAPI = axios.create({
-  baseURL: SERVICES.USER,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-export const quoteAPI = axios.create({
-  baseURL: SERVICES.QUOTE,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-export const notificationAPI = axios.create({
-  baseURL: SERVICES.NOTIFICATION,
+// Single API instance for consolidated service
+export const coreAPI = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -48,27 +19,20 @@ const addAuthToken = (config) => {
   return config;
 };
 
-// Add interceptors to all APIs
-[userAPI, quoteAPI, notificationAPI].forEach(api => {
-  api.interceptors.request.use(addAuthToken);
-  
-  // Handle 401 responses
-  api.interceptors.response.use(
-    response => response,
-    error => {
-      if (error.response?.status === 401) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
-      }
-      return Promise.reject(error);
-    }
-  );
-});
+// Add interceptors
+coreAPI.interceptors.request.use(addAuthToken);
 
-export default {
-  auth: authAPI,
-  user: userAPI,
-  quote: quoteAPI,
-  notification: notificationAPI
-};
+// Handle 401 responses
+coreAPI.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default coreAPI;

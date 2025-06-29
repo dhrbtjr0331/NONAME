@@ -150,8 +150,31 @@ const QuoteList = () => {
                 )}
 
                 {quote.status === 'ACCEPTED' && (
-                  <Button variant="success" style={{ flex: 1 }} disabled>
+                  <div style={{ 
+                    flex: 1,
+                    padding: '10px',
+                    backgroundColor: '#d4edda', 
+                    color: '#155724',
+                    borderRadius: '4px',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    cursor: 'default'  // Changed from pointer to default
+                  }}>
                     ✓ Accepted
+                  </div>
+                )}
+
+                {/* Keep other status buttons as they were */}
+                {quote.status === 'SUBMITTED' && (
+                  <Button variant="outline" style={{ flex: 1 }} disabled>
+                    Under Review
+                  </Button>
+                )}
+
+                {quote.status === 'REJECTED' && (
+                  <Button variant="secondary" style={{ flex: 1 }} disabled>
+                    Rejected
                   </Button>
                 )}
               </div>
