@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { userAPI } from '../../services/api';
+import { userService } from '../../services/user';
 import { useAuth } from '../../hooks/useAuth';
 import Card from '../common/Card';
 import Input from '../common/Input';
@@ -45,9 +45,9 @@ const Profile = () => {
       
       // Try to get existing profile
       try {
-        const profileResponse = await userAPI.get('/users/profile');
-        setProfile(profileResponse.data);
-        setProfileForm(profileResponse.data);
+        const profileResponse = await userService.getMyProfile();
+        setProfile(profileResponse);
+        setProfileForm(profileResponse);
       } catch (error) {
         if (error.response?.status !== 404) {
           console.error('Error loading profile:', error);
@@ -56,9 +56,9 @@ const Profile = () => {
 
       // Try to get existing company
       try {
-        const companyResponse = await userAPI.get('/companies/my-company');
-        setCompany(companyResponse.data);
-        setCompanyForm(companyResponse.data);
+        const companyResponse = await userService.getMyCompany();
+        setCompany(companyResponse);
+        setCompanyForm(companyResponse);
       } catch (error) {
         if (error.response?.status !== 404) {
           console.error('Error loading company:', error);
@@ -78,15 +78,15 @@ const Profile = () => {
     try {
       if (profile) {
         // Update existing profile
-        const response = await userAPI.put('/users/profile', profileForm);
-        setProfile(response.data);
+        const response = await userService.updateProfile(profileForm);
+        setProfile(response);
       } else {
         // Create new profile
-        const response = await userAPI.post('/users/profile', {
+        const response = await userService.createProfile({
           ...profileForm,
           user_id: user.id
         });
-        setProfile(response.data);
+        setProfile(response);
       }
       alert('Profile saved successfully!');
     } catch (error) {
@@ -104,12 +104,12 @@ const Profile = () => {
     try {
       if (company) {
         // Update existing company
-        const response = await userAPI.put('/companies/my-company', companyForm);
-        setCompany(response.data);
+        const response = await userService.updateCompany(companyForm);
+        setCompany(response);
       } else {
         // Create new company
-        const response = await userAPI.post('/companies/', companyForm);
-        setCompany(response.data);
+        const response = await userService.createCompany(companyForm);
+        setCompany(response);
       }
       alert('Company information saved successfully!');
     } catch (error) {

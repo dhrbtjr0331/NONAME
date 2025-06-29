@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('access_token');
       if (token) {
-        const userData = await authService.getCurrentUser(token);
+        const userData = await authService.getCurrentUser();
         setUser(userData);
       }
     } catch (error) {
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
       
-      const userData = await authService.getCurrentUser(response.access_token);
+      const userData = await authService.getCurrentUser();
       setUser(userData);
       
       return { success: true };

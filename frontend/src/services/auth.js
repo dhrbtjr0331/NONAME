@@ -1,8 +1,8 @@
-import { authAPI } from './api';
+import coreAPI from './api';
 
 export const authService = {
   login: async (email, password) => {
-    const response = await authAPI.post('/auth/login', {
+    const response = await coreAPI.post('/auth/login', {
       email,
       password
     });
@@ -10,7 +10,7 @@ export const authService = {
   },
 
   register: async (email, password, isManufacturer) => {
-    const response = await authAPI.post('/auth/register', {
+    const response = await coreAPI.post('/auth/register', {
       email,
       password,
       is_manufacturer: isManufacturer
@@ -18,17 +18,13 @@ export const authService = {
     return response.data;
   },
 
-  getCurrentUser: async (token) => {
-    const response = await authAPI.get('/auth/me', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+  getCurrentUser: async () => {
+    const response = await coreAPI.get('/auth/me');
     return response.data;
   },
 
   refreshToken: async (refreshToken) => {
-    const response = await authAPI.post('/auth/refresh', {}, {
+    const response = await coreAPI.post('/auth/refresh', {}, {
       headers: {
         Authorization: `Bearer ${refreshToken}`
       }

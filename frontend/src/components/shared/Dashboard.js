@@ -299,68 +299,68 @@ const SupplierDashboard = () => {
                     </Link>
                   </h4>
                   <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
-                    {rfq.product_category} • {rfq.quantity} {rfq.unit}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#999' }}>
-                    Deadline: {format(new Date(rfq.quote_deadline), 'MMM dd, yyyy')}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
+                   {rfq.product_category} • {rfq.quantity} {rfq.unit}
+                 </div>
+                 <div style={{ fontSize: '12px', color: '#999' }}>
+                   Deadline: {format(new Date(rfq.quote_deadline), 'MMM dd, yyyy')}
+                 </div>
+               </div>
+             ))}
+           </div>
+         )}
+       </Card>
 
-        {/* Recent Quotes */}
-        <Card 
-          title="My Recent Quotes" 
-          headerAction={
-            <Link to="/my-quotes">
-              <Button variant="outline">View All</Button>
-            </Link>
-          }
-        >
-          {myQuotes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>No quotes submitted yet.</p>
-              <Link to="/browse-rfqs">
-                <Button>Find RFQs to Quote</Button>
-              </Link>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {myQuotes.slice(0, 3).map(quote => (
-                <div 
-                  key={quote.id}
-                  style={{ 
-                    padding: '15px', 
-                    border: '1px solid #eee', 
-                    borderRadius: '4px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div>
-                    <h4 style={{ margin: '0 0 5px 0' }}>
-                      <Link to={`/quotes/${quote.id}`} style={{ color: '#007bff', textDecoration: 'none' }}>
-                        Quote #{quote.id}
-                      </Link>
-                    </h4>
-                    <div style={{ fontSize: '14px', color: '#666' }}>
-                      {quote.currency} {quote.total_price.toLocaleString()}
-                    </div>
-                  </div>
-                  <span className={`status-badge status-${quote.status.toLowerCase()}`}>
-                    {quote.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
-  );
+       {/* Recent Quotes */}
+       <Card 
+         title="My Recent Quotes" 
+         headerAction={
+           <Link to="/my-quotes">
+             <Button variant="outline">View All</Button>
+           </Link>
+         }
+       >
+         {myQuotes.length === 0 ? (
+           <div style={{ textAlign: 'center', padding: '20px' }}>
+             <p>No quotes submitted yet.</p>
+             <Link to="/browse-rfqs">
+               <Button>Find RFQs to Quote</Button>
+             </Link>
+           </div>
+         ) : (
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+             {myQuotes.slice(0, 3).map(quote => (
+               <div 
+                 key={quote.id}
+                 style={{ 
+                   padding: '15px', 
+                   border: '1px solid #eee', 
+                   borderRadius: '4px',
+                   display: 'flex',
+                   justifyContent: 'space-between',
+                   alignItems: 'center'
+                 }}
+               >
+                 <div>
+                   <h4 style={{ margin: '0 0 5px 0' }}>
+                     <Link to={`/quotes/${quote.id}`} style={{ color: '#007bff', textDecoration: 'none' }}>
+                       Quote #{quote.id}
+                     </Link>
+                   </h4>
+                   <div style={{ fontSize: '14px', color: '#666' }}>
+                     {quote.currency} {quote.total_price.toLocaleString()}
+                   </div>
+                 </div>
+                 <span className={`status-badge status-${quote.status.toLowerCase()}`}>
+                   {quote.status}
+                 </span>
+               </div>
+             ))}
+           </div>
+         )}
+       </Card>
+     </div>
+   </div>
+ );
 };
 
 export default Dashboard;

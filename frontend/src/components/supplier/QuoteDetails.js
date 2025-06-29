@@ -252,9 +252,12 @@ const QuoteDetails = () => {
             </div>
           )}
           
+          {/* Remove this Link to RFQ for suppliers */}
+          {/* 
           <Link to={`/rfqs/${quote.rfq_id}`}>
             <Button variant="outline">View Original RFQ</Button>
-          </Link>
+          </Link> 
+          */}
         </div>
       </Card>
     </div>

@@ -39,7 +39,7 @@ const CreateRFQ = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       const rfqData = {
         ...formData,
@@ -47,16 +47,22 @@ const CreateRFQ = () => {
         target_price_min: formData.target_price_min ? parseFloat(formData.target_price_min) : null,
         target_price_max: formData.target_price_max ? parseFloat(formData.target_price_max) : null,
         max_suppliers: parseInt(formData.max_suppliers),
+        // Ensure proper datetime format
         quote_deadline: new Date(formData.quote_deadline).toISOString(),
-        delivery_deadline: formData.delivery_deadline ? new Date(formData.delivery_deadline).toISOString() : null
+        delivery_deadline: formData.delivery_deadline ? new Date(formData.delivery_deadline).toISOString() : null,
+        // Ensure uppercase priority
+        priority: formData.priority.toUpperCase()
       };
-
+  
+      console.log('Sending RFQ data:', rfqData); // Debug log
+  
       const response = await rfqService.createRFQ(rfqData);
       alert('RFQ created successfully!');
       navigate(`/rfqs/${response.id}`);
     } catch (error) {
       console.error('Error creating RFQ:', error);
-      alert('Error creating RFQ. Please try again.');
+      console.error('Error response:', error.response?.data); // Debug log
+      alert(`Error creating RFQ: ${error.response?.data?.detail || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
