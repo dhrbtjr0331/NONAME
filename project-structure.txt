@@ -1,0 +1,214 @@
+.
+├── frontend
+│   ├── build
+│   │   ├── asset-manifest.json
+│   │   ├── index.html
+│   │   └── static
+│   │       ├── css
+│   │       │   ├── main.330b7226.css
+│   │       │   └── main.330b7226.css.map
+│   │       └── js
+│   │           ├── main.4b2f88b1.js
+│   │           ├── main.4b2f88b1.js.LICENSE.txt
+│   │           └── main.4b2f88b1.js.map
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   └── index.html
+│   ├── README.md
+│   └── src
+│       ├── App.css
+│       ├── App.js
+│       ├── components
+│       │   ├── auth
+│       │   │   ├── Login.js
+│       │   │   ├── ProtectedRoute.js
+│       │   │   └── Register.js
+│       │   ├── common
+│       │   │   ├── Button.js
+│       │   │   ├── Card.js
+│       │   │   ├── Input.js
+│       │   │   └── LoadingSpinner.js
+│       │   ├── manufacturer
+│       │   │   ├── CreateRFQ.js
+│       │   │   ├── QuoteComparison.js
+│       │   │   ├── RFQDetails.js
+│       │   │   └── RFQList.js
+│       │   ├── shared
+│       │   │   ├── Dashboard.js
+│       │   │   ├── Header.js
+│       │   │   └── Profile.js
+│       │   └── supplier
+│       │       ├── CreateQuote.js
+│       │       ├── QuoteDetails.js
+│       │       ├── QuoteList.js
+│       │       └── RFQBrowse.js
+│       ├── hooks
+│       │   └── useAuth.js
+│       ├── index.js
+│       ├── services
+│       │   ├── api.js
+│       │   ├── auth.js
+│       │   ├── quote.js
+│       │   ├── rfq.js
+│       │   └── user.js
+│       ├── styles
+│       │   └── globals.css
+│       └── utils
+├── infra
+│   ├── app.py
+│   ├── cdk.json
+│   ├── cdk.out
+│   ├── infra
+│   │   ├── __init__.py
+│   │   └── infra_stack.py
+│   ├── README.md
+│   ├── requirements-dev.txt
+│   ├── requirements.txt
+│   ├── source.bat
+│   └── tests
+│       ├── __init__.py
+│       └── unit
+│           ├── __init__.py
+│           └── test_infra_stack.py
+├── LICENSE
+├── project-structure.txt
+├── README.md
+├── requirements-dev.txt
+├── requirements.txt
+├── run_core_api.py
+├── services
+│   ├── core-api-service
+│   │   ├── app
+│   │   │   ├── __pycache__
+│   │   │   │   └── main.cpython-312.pyc
+│   │   │   ├── config
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── database.cpython-312.pyc
+│   │   │   │   │   └── settings.cpython-312.pyc
+│   │   │   │   ├── database.py
+│   │   │   │   └── settings.py
+│   │   │   ├── dependencies
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   └── auth.cpython-312.pyc
+│   │   │   │   └── auth.py
+│   │   │   ├── main.py
+│   │   │   ├── models
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── auth.cpython-312.pyc
+│   │   │   │   │   ├── quote.cpython-312.pyc
+│   │   │   │   │   └── user.cpython-312.pyc
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── quote.py
+│   │   │   │   └── user.py
+│   │   │   ├── routers
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── auth.cpython-312.pyc
+│   │   │   │   │   ├── companies.cpython-312.pyc
+│   │   │   │   │   ├── quotes.cpython-312.pyc
+│   │   │   │   │   ├── rfqs.cpython-312.pyc
+│   │   │   │   │   └── users.cpython-312.pyc
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── companies.py
+│   │   │   │   ├── quotes.py
+│   │   │   │   ├── rfqs.py
+│   │   │   │   └── users.py
+│   │   │   ├── schemas
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── auth.cpython-312.pyc
+│   │   │   │   │   ├── company.cpython-312.pyc
+│   │   │   │   │   ├── quote.cpython-312.pyc
+│   │   │   │   │   ├── rfq.cpython-312.pyc
+│   │   │   │   │   └── user.cpython-312.pyc
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── company.py
+│   │   │   │   ├── quote.py
+│   │   │   │   ├── rfq.py
+│   │   │   │   └── user.py
+│   │   │   ├── services
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── auth_service.cpython-312.pyc
+│   │   │   │   │   ├── quote_service.cpython-312.pyc
+│   │   │   │   │   ├── rfq_service.cpython-312.pyc
+│   │   │   │   │   └── user_service.cpython-312.pyc
+│   │   │   │   ├── auth_service.py
+│   │   │   │   ├── quote_service.py
+│   │   │   │   ├── rfq_service.py
+│   │   │   │   └── user_service.py
+│   │   │   └── utils
+│   │   │       ├── __init__.py
+│   │   │       ├── __pycache__
+│   │   │       │   ├── __init__.cpython-312.pyc
+│   │   │       │   └── jwt_handler.cpython-312.pyc
+│   │   │       └── jwt_handler.py
+│   │   └── requirements.txt
+│   └── notification-service
+│       ├── app
+│       │   ├── __pycache__
+│       │   │   └── main.cpython-312.pyc
+│       │   ├── config
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-312.pyc
+│       │   │   │   ├── database.cpython-312.pyc
+│       │   │   │   └── settings.cpython-312.pyc
+│       │   │   ├── database.py
+│       │   │   └── settings.py
+│       │   ├── main.py
+│       │   ├── models
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-312.pyc
+│       │   │   │   └── notification.cpython-312.pyc
+│       │   │   └── notification.py
+│       │   ├── routers
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-312.pyc
+│       │   │   │   └── notifications.cpython-312.pyc
+│       │   │   └── notifications.py
+│       │   ├── schemas
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-312.pyc
+│       │   │   │   └── notification.cpython-312.pyc
+│       │   │   └── notification.py
+│       │   ├── services
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-312.pyc
+│       │   │   │   ├── email_service.cpython-312.pyc
+│       │   │   │   └── notification_service.cpython-312.pyc
+│       │   │   ├── email_service.py
+│       │   │   └── notification_service.py
+│       │   ├── templates
+│       │   │   ├── quote_accepted.html
+│       │   │   ├── quote_submitted.html
+│       │   │   └── rfq_created.html
+│       │   └── utils
+│       │       ├── __init__.py
+│       │       ├── __pycache__
+│       │       │   ├── __init__.cpython-312.pyc
+│       │       │   └── auth_dependencies.cpython-312.pyc
+│       │       └── auth_dependencies.py
+│       └── Dockerfile
+├── shared
+│   └── database
+│       └── test.db
+└── tests
+    ├── __init__.py
+    └── test_example.py
+
+60 directories, 152 files
