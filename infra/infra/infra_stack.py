@@ -19,8 +19,14 @@ import json
 
 class InfraStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, deployment_env: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        
+        self.deployment_env = deployment_env
+        self.is_production = deployment_env == 'prod'
+        
+        # Environment-specific configurations
+        self.config = self.get_environment_config()
 
         # Create VPC for the application
         self.vpc = self.create_vpc()
@@ -45,6 +51,42 @@ class InfraStack(Stack):
 
         # Output important values
         self.create_outputs()
+        
+    def get_environment_config(self):
+        """Get environment-specific configuration"""
+        configs = {
+            'dev': {
+                'database_deletion_protection': False,
+                'database_removal_policy': RemovalPolicy.DESTROY,
+                'database_min_capacity': 0.5,
+                'database_max_capacity': 2,
+                'lambda_memory_size': 256,
+                'lambda_timeout': Duration.seconds(30),
+                'log_retention': logs.RetentionDays.THREE_DAYS,
+                'enable_deletion_protection': False,
+            },
+            'staging': {
+                'database_deletion_protection': False,
+                'database_removal_policy': RemovalPolicy.DESTROY,
+                'database_min_capacity': 0.5,
+                'database_max_capacity': 4,
+                'lambda_memory_size': 256,
+                'lambda_timeout': Duration.seconds(60),
+                'log_retention': logs.RetentionDays.ONE_WEEK,
+                'enable_deletion_protection': False,
+            },
+            'prod': {
+                'database_deletion_protection': True,
+                'database_removal_policy': RemovalPolicy.RETAIN,
+                'database_min_capacity': 1,
+                'database_max_capacity': 8,
+                'lambda_memory_size': 256,
+                'lambda_timeout': Duration.seconds(120),
+                'log_retention': logs.RetentionDays.ONE_MONTH,
+                'enable_deletion_protection': True,
+            }
+        }
+        return configs[self.deployment_env]
 
     def create_vpc(self) -> ec2.Vpc:
         """Create VPC with public and private subnets"""
@@ -106,17 +148,18 @@ class InfraStack(Stack):
             ),
             credentials=rds.Credentials.from_generated_secret(
                 "b2b_marketplace_db_admin",
-                secret_name="b2b-marketplace/database/credentials"
+                secret_name=f"b2b-marketplace/{self.deployment_env}/database/credentials"
             ),
             default_database_name="b2b_marketplace",
             vpc=self.vpc,
             subnet_group=db_subnet_group,
             security_groups=[db_security_group],
-            serverless_v2_min_capacity=0.5,
-            serverless_v2_max_capacity=4,
-            enable_data_api=True,  # Enable Data API for serverless access
-            deletion_protection=False,  # Set to True in production
-            removal_policy=RemovalPolicy.DESTROY,  # Change in production
+            serverless_v2_min_capacity=self.config['database_min_capacity'],
+            serverless_v2_max_capacity=self.config['database_max_capacity'],
+            writer=rds.ClusterInstance.serverless_v2("writer"),
+            enable_data_api=True,
+            deletion_protection=self.config['database_deletion_protection'],
+            removal_policy=self.config['database_removal_policy'],
         )
         
         return cluster
@@ -127,12 +170,12 @@ class InfraStack(Stack):
         # JWT Secret
         jwt_secret = secretsmanager.Secret(
             self, "JwtSecret",
-            description="JWT secret key for B2B Marketplace",
-            secret_name="b2b-marketplace/jwt-secret",
+            description=f"JWT secret key for B2B Marketplace - {self.deployment_env}",
+            secret_name=f"b2b-marketplace/{self.deployment_env}/jwt-secret",
             generate_secret_string=secretsmanager.SecretStringGenerator(
                 secret_string_template=json.dumps({"algorithm": "HS256"}),
                 generate_string_key="secret_key",
-                exclude_characters=' \t\n\r\f\v"\\',
+                exclude_characters=' "\\',
                 password_length=64,
             ),
         )
@@ -176,22 +219,23 @@ class InfraStack(Stack):
         core_api_lambda = _lambda.Function(
             self, "CoreApiLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
-            handler="main.handler",
-            code=_lambda.Code.from_asset("lambda/core-api"),  # You'll create this directory
+            handler="lambda_handler.handler",
+            code=_lambda.Code.from_asset("../services/core-api-service"),
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
             security_groups=[lambda_security_group],
             role=lambda_role,
-            timeout=Duration.seconds(30),
-            memory_size=512,
+            timeout=self.config['lambda_timeout'],
+            memory_size=self.config['lambda_memory_size'],
             environment={
                 "DATABASE_SECRET_ARN": self.database.secret.secret_arn,
                 "JWT_SECRET_ARN": self.secrets["jwt"].secret_arn,
                 "DATABASE_NAME": "b2b_marketplace",
+                "ENVIRONMENT": self.deployment_env,
             },
-            log_retention=logs.RetentionDays.ONE_WEEK,
+            log_retention=self.config['log_retention'],
         )
         
         return core_api_lambda
@@ -231,6 +275,7 @@ class InfraStack(Stack):
         
         bucket = s3.Bucket(
             self, "FrontendBucket",
+            bucket_name=f"b2b-marketplace-frontend-{self.deployment_env}-{self.account}",
             website_index_document="index.html",
             website_error_document="error.html",
             public_read_access=True,
@@ -240,7 +285,7 @@ class InfraStack(Stack):
                 ignore_public_acls=False,
                 restrict_public_buckets=False,
             ),
-            removal_policy=RemovalPolicy.DESTROY,  # Change in production
+            removal_policy=self.config['database_removal_policy'],
         )
         
         return bucket
