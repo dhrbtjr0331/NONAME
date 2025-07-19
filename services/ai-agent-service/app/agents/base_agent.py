@@ -2,9 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, TypedDict
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -12,78 +9,68 @@ import json
 import uuid
 from datetime import datetime
 
+# GENERIC AgentState - works for ANY agent type
 class AgentState(TypedDict):
-    """State for LangGraph agent"""
+    """Generic state for any LangGraph agent"""
     messages: List[BaseMessage]
-    rfq_data: Dict[str, Any]
+    domain_data: Dict[str, Any]  # Generic domain data (could be RFQ, supplier info, etc.)
     user_id: Optional[str]
     session_id: str
+    agent_type: str  # "rfq", "supplier", "quote_analyzer", etc.
     next_action: Optional[str]
 
-class RFQAgentResponse(TypedDict):
-    """Structured response from RFQ agent"""
-    message: str
-    rfq_updates: Dict[str, Any]
-    suggested_actions: List[str]
-    confidence_score: float
-
 class BaseAgent(ABC):
-    """Base class for LangChain-powered AI agents"""
+    """Truly generic base class for ALL agents"""
     
-    def __init__(self, agent_name: str, llm=None):
+    def __init__(self, agent_name: str, agent_type: str, llm=None):
         self.agent_name = agent_name
+        self.agent_type = agent_type
         self.llm = llm
-        self.memory = MemorySaver()  # LangGraph checkpoint for conversation memory
-        self.message_history = {}  # Store chat histories per session
+        self.memory = MemorySaver()
+        self.message_history = {}
     
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
-        """Get or create chat message history for session using LangChain"""
+        """Get or create chat message history for session"""
         if session_id not in self.message_history:
             self.message_history[session_id] = ChatMessageHistory()
         return self.message_history[session_id]
     
-    @abstractmethod
-    def get_system_prompt_template(self) -> ChatPromptTemplate:
-        """Get the prompt template for this agent"""
-        pass
-    
+    # ABSTRACT METHODS - Each agent MUST implement these
     @abstractmethod
     async def process_user_input(self, state: AgentState) -> AgentState:
-        """Process user input and update state"""
+        """Process user input - DOMAIN SPECIFIC"""
         pass
     
-    def create_chain_with_history(self):
-        """Create a chain with message history using LangChain"""
-        prompt = self.get_system_prompt_template()
-        
-        chain = prompt | self.llm | StrOutputParser()
-        
-        return RunnableWithMessageHistory(
-            chain,
-            self.get_session_history,
-            input_messages_key="messages",
-            history_messages_key="chat_history",
-        )
+    @abstractmethod
+    async def update_domain_data(self, state: AgentState) -> AgentState:
+        """Extract and update domain-specific data - DOMAIN SPECIFIC"""
+        pass
     
+    @abstractmethod
+    def get_system_prompt_template(self):
+        """Get agent-specific prompt template - DOMAIN SPECIFIC"""
+        pass
+    
+    # CONCRETE METHODS - Same for all agents
     def build_graph(self) -> StateGraph:
-        """Build LangGraph state graph for agent workflow"""
+        """Build LangGraph workflow - SAME FOR ALL AGENTS"""
         workflow = StateGraph(AgentState)
         
-        # Add nodes
+        # Add nodes - same workflow for all agents
         workflow.add_node("process_input", self.process_user_input)
         workflow.add_node("generate_response", self.generate_response_node)
-        workflow.add_node("update_rfq", self.update_rfq_node)
+        workflow.add_node("update_data", self.update_domain_data)
         
-        # Add edges
+        # Add edges - same flow for all agents
         workflow.set_entry_point("process_input")
         workflow.add_edge("process_input", "generate_response")
-        workflow.add_edge("generate_response", "update_rfq")
-        workflow.add_edge("update_rfq", END)
+        workflow.add_edge("generate_response", "update_data")
+        workflow.add_edge("update_data", END)
         
         return workflow.compile(checkpointer=self.memory)
     
     async def generate_response_node(self, state: AgentState) -> AgentState:
-        """Generate AI response using LLM"""
+        """Generate AI response - SAME FOR ALL AGENTS"""
         # Get the latest user message
         latest_message = state["messages"][-1] if state["messages"] else None
         if not latest_message:
@@ -93,11 +80,12 @@ class BaseAgent(ABC):
         # Prepare input for the LLM
         llm_input = {
             "messages": [latest_message],
-            "rfq_data": state["rfq_data"],
-            "user_id": state["user_id"]
+            "domain_data": state["domain_data"],
+            "user_id": state["user_id"],
+            "agent_type": state["agent_type"]
         }
         
-        # Generate response
+        # Generate response using the agent's LLM
         response = await self.llm.ainvoke(llm_input)
         
         # Add AI response to messages
@@ -105,24 +93,17 @@ class BaseAgent(ABC):
         
         return state
     
-    async def update_rfq_node(self, state: AgentState) -> AgentState:
-        """Update RFQ data based on conversation"""
-        # This is where we'd extract structured data from the conversation
-        # and update the RFQ fields
-        
-        # For now, this is a placeholder - we'll implement extraction logic
-        return state
-    
-    async def chat(self, message: str, session_id: str, rfq_data: Dict[str, Any] = None, user_id: str = None) -> Dict[str, Any]:
-        """Main chat interface"""
+    async def chat(self, message: str, session_id: str, domain_data: Dict[str, Any] = None, user_id: str = None) -> Dict[str, Any]:
+        """Main chat interface - SAME FOR ALL AGENTS"""
         graph = self.build_graph()
         
         # Prepare initial state
         initial_state = AgentState(
             messages=[HumanMessage(content=message)],
-            rfq_data=rfq_data or {},
+            domain_data=domain_data or {},
             user_id=user_id,
             session_id=session_id,
+            agent_type=self.agent_type,
             next_action=None
         )
         
@@ -133,6 +114,7 @@ class BaseAgent(ABC):
         # Return structured response
         return {
             "response": result["messages"][-1].content if result["messages"] else "I'm here to help!",
-            "rfq_updates": result["rfq_data"],
-            "session_id": session_id
+            "domain_data": result["domain_data"],
+            "session_id": session_id,
+            "agent_type": self.agent_type
         }

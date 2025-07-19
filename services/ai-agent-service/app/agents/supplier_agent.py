@@ -2,7 +2,9 @@ from typing import Dict, Any
 from langchain_core.messages import HumanMessage, AIMessage
 import re
 
-from .corrected_base_agent import BaseAgent, AgentState
+from .base_agent import BaseAgent, AgentState
+
+""" NEED MODIFICATION."""
 
 class SupplierAgent(BaseAgent):
     """Supplier analysis agent - DIFFERENT domain, SAME workflow"""
