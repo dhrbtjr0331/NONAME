@@ -1,8 +1,15 @@
-from typing import Dict, Any
-from langchain_core.messages import HumanMessage, AIMessage
-import re
+from typing import Dict, Any, List
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+import json
 
 from .base_agent import BaseAgent, AgentState
+from app.prompts.rfq_assistant import (
+    SYSTEM_PROMPT,
+    get_data_extraction_prompt,
+    get_context_analysis_prompt,
+    get_next_question_prompt,
+    get_next_steps_prompt
+)
 
 class RFQAssistant(BaseAgent):
     """RFQ-specific agent that inherits generic workflow from BaseAgent"""
@@ -14,24 +21,45 @@ class RFQAssistant(BaseAgent):
     # IMPLEMENT ABSTRACT METHODS - RFQ-SPECIFIC
     
     async def process_user_input(self, state: AgentState) -> AgentState:
-        """Process user input - RFQ SPECIFIC logic"""
+        """Process user input with intelligent RFQ context analysis"""
         if not state["messages"]:
             return state
         
-        # RFQ-specific preprocessing could go here
-        # For example: detect if user is asking about pricing, specifications, etc.
         latest_message = state["messages"][-1]
         
-        # Add RFQ-specific context to the state
+        # Initialize domain_data if needed
         if "domain_data" not in state:
             state["domain_data"] = {}
         
-        # RFQ-specific analysis
-        message_lower = latest_message.content.lower()
-        if any(word in message_lower for word in ["urgent", "asap", "rush"]):
-            state["domain_data"]["urgency"] = "high"
+        # Enhance state with intelligent context analysis
+        await self._analyze_message_context(latest_message.content, state)
         
         return state
+    
+    async def _analyze_message_context(self, message: str, state: AgentState) -> None:
+        """Use LLM to analyze message context and set appropriate flags"""
+        context_prompt = get_context_analysis_prompt(message)
+        
+        try:
+            context_result = await self.llm.ainvoke({"messages": [SystemMessage(content=context_prompt)]})
+            context_data = json.loads(context_result)
+            
+            # Update state with context insights
+            if context_data.get("urgency"):
+                state["domain_data"]["urgency"] = context_data["urgency"]
+            if context_data.get("industry"):
+                state["domain_data"]["industry_context"] = context_data["industry"]
+            if context_data.get("stage"):
+                state["domain_data"]["procurement_stage"] = context_data["stage"]
+            if context_data.get("style"):
+                state["domain_data"]["communication_style"] = context_data["style"]
+                
+        except Exception as e:
+            # Fallback to simple urgency detection
+            message_lower = message.lower()
+            if any(word in message_lower for word in ["urgent", "asap", "rush", "immediately"]):
+                state["domain_data"]["urgency"] = "high"
+            print(f"⚠️ Context analysis failed, using fallback: {e}")
     
     async def update_domain_data(self, state: AgentState) -> AgentState:
         """Extract RFQ data from conversation - RFQ SPECIFIC"""
@@ -45,83 +73,79 @@ class RFQAssistant(BaseAgent):
         
         latest_user_message = user_messages[-1].content
         
-        # RFQ-SPECIFIC DATA EXTRACTION
-        extracted_rfq_data = self._extract_rfq_data(latest_user_message, state["domain_data"])
+        # LLM-POWERED RFQ DATA EXTRACTION
+        extracted_rfq_data = await self._extract_rfq_data_with_llm(latest_user_message, state["domain_data"])
         
         # Update domain_data with RFQ-specific information
         if extracted_rfq_data:
             state["domain_data"].update(extracted_rfq_data)
-            print(f"🔍 Extracted RFQ data: {extracted_rfq_data}")
+            print(f"🔍 LLM Extracted RFQ data: {extracted_rfq_data}")
         
         return state
     
     def get_system_prompt_template(self):
-        """RFQ-specific system prompt"""
-        return """You are an expert RFQ (Request for Quotation) assistant. 
-        Help manufacturers create detailed procurement requests by gathering:
-        - Product specifications
-        - Quantities needed
-        - Timeline requirements
-        - Quality standards
-        - Budget constraints
-        
-        Ask one focused question at a time and be conversational."""
+        """Get RFQ-specific system prompt from centralized prompts"""
+        return SYSTEM_PROMPT
     
     # RFQ-SPECIFIC HELPER METHODS
     
-    def _extract_rfq_data(self, message: str, current_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract structured RFQ data from user message"""
-        extracted = {}
-        message_lower = message.lower()
+    async def _extract_rfq_data_with_llm(self, message: str, current_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Use LLM to intelligently extract RFQ data from user message"""
+        extraction_prompt = get_data_extraction_prompt(message, current_data)
         
-        # Extract product name
-        if any(keyword in message_lower for keyword in ["steel brackets", "brackets"]):
-            extracted["product_name"] = "steel brackets"
-        elif "product" in message_lower:
-            # More sophisticated extraction could go here
-            product_match = re.search(r'(?:product|component|part|item)(?:\s+(?:is|called|named))?\s+([a-zA-Z0-9\s]+)', message_lower)
-            if product_match:
-                extracted["product_name"] = product_match.group(1).strip()
-        
-        # Extract quantity
-        quantity_match = re.search(r'(\d+(?:,\d{3})*)\s*(?:units?|pieces?|pcs?|items?)', message_lower)
-        if quantity_match:
-            extracted["quantity"] = int(quantity_match.group(1).replace(',', ''))
-        
-        # Extract timeline
-        if "weeks" in message_lower:
-            weeks_match = re.search(r'(\d+)\s*weeks?', message_lower)
-            if weeks_match:
-                extracted["timeline"] = f"{weeks_match.group(1)} weeks"
-        
-        # Extract budget
-        budget_match = re.search(r'\$(\d+(?:,\d{3})*)', message)
-        if budget_match:
-            extracted["budget_range"] = f"${budget_match.group(1)}"
-        
-        return extracted
+        try:
+            # Use LLM for intelligent extraction
+            extraction_result = await self.llm.ainvoke({"messages": [SystemMessage(content=extraction_prompt)]})
+            
+            # Parse JSON response
+            try:
+                extracted_data = json.loads(extraction_result)
+                if isinstance(extracted_data, dict):
+                    return extracted_data
+            except json.JSONDecodeError:
+                # Fallback: try to find JSON in response
+                import re
+                json_match = re.search(r'\{.*\}', extraction_result, re.DOTALL)
+                if json_match:
+                    extracted_data = json.loads(json_match.group())
+                    if isinstance(extracted_data, dict):
+                        return extracted_data
+                        
+            return {}  # Fallback to empty if parsing fails
+            
+        except Exception as e:
+            print(f"⚠️ LLM extraction failed: {e}")
+            return {}  # Graceful fallback
     
-    def _determine_next_question(self, rfq_data: Dict[str, Any]) -> str:
-        """Determine what RFQ question to ask next"""
-        if not rfq_data.get("product_name"):
-            return "What specific product or component are you looking to source?"
+    async def _determine_next_question_with_llm(self, rfq_data: Dict[str, Any], conversation_context: List[str]) -> str:
+        """Use LLM to determine the most appropriate next question"""
+        question_prompt = get_next_question_prompt(rfq_data, conversation_context)
         
-        if not rfq_data.get("quantity"):
-            return "What quantity do you need?"
-        
-        if not rfq_data.get("timeline"):
-            return "What's your target timeline for delivery?"
-        
-        if not rfq_data.get("budget_range"):
-            return "Do you have a budget range in mind?"
-        
-        return "Are there any additional requirements we should include?"
+        try:
+            question = await self.llm.ainvoke({"messages": [SystemMessage(content=question_prompt)]})
+            return question.strip().strip('"').strip("'")
+        except Exception as e:
+            print(f"⚠️ Next question generation failed: {e}")
+            return "What additional information would help complete your RFQ?"
     
-    def get_rfq_summary(self, rfq_data: Dict[str, Any]) -> str:
-        """Generate RFQ summary"""
-        if not rfq_data:
-            return "No RFQ information collected yet."
+    async def get_rfq_summary(self, session_id: str) -> Dict[str, Any]:
+        """Generate comprehensive RFQ summary from conversation history"""
+        # Get full conversation history
+        conversation_data = await self.get_conversation_history(session_id)
         
+        if conversation_data["message_count"] == 0:
+            return {
+                "summary": "No conversation history found for this session.",
+                "rfq_data": {},
+                "conversation_length": 0,
+                "session_id": session_id
+            }
+        
+        # Get accumulated domain data
+        existing_state = await self.get_session_state(session_id)
+        rfq_data = existing_state.get("domain_data", {})
+        
+        # Generate summary
         summary_parts = []
         if rfq_data.get("product_name"):
             summary_parts.append(f"Product: {rfq_data['product_name']}")
@@ -131,5 +155,50 @@ class RFQAssistant(BaseAgent):
             summary_parts.append(f"Timeline: {rfq_data['timeline']}")
         if rfq_data.get("budget_range"):
             summary_parts.append(f"Budget: {rfq_data['budget_range']}")
+        if rfq_data.get("urgency"):
+            summary_parts.append(f"Urgency: {rfq_data['urgency']}")
         
-        return "Current RFQ Summary:\n" + "\n".join(f"• {part}" for part in summary_parts)
+        # Create conversation summary
+        conversation_summary = []
+        for msg in conversation_data["conversation"]:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            conversation_summary.append(f"{role}: {msg['content'][:100]}{'...' if len(msg['content']) > 100 else ''}")
+        
+        summary_text = "RFQ Summary:\n" + "\n".join(f"• {part}" for part in summary_parts) if summary_parts else "No RFQ details collected yet."
+        
+        return {
+            "summary": summary_text,
+            "rfq_data": rfq_data,
+            "conversation_summary": conversation_summary,
+            "conversation_length": conversation_data["message_count"],
+            "session_id": session_id,
+            "next_steps": await self._suggest_next_steps_with_llm(rfq_data, conversation_data["message_count"])
+        }
+    
+    async def _suggest_next_steps_with_llm(self, rfq_data: Dict[str, Any], conversation_length: int) -> List[str]:
+        """Use LLM to intelligently suggest next steps"""
+        steps_prompt = get_next_steps_prompt(rfq_data, conversation_length)
+        
+        try:
+            steps_result = await self.llm.ainvoke({"messages": [SystemMessage(content=steps_prompt)]})
+            
+            # Parse JSON response
+            try:
+                steps_data = json.loads(steps_result)
+                if isinstance(steps_data, list):
+                    return [str(step) for step in steps_data]
+            except json.JSONDecodeError:
+                # Fallback: try to find JSON array in response
+                import re
+                json_match = re.search(r'\[.*\]', steps_result, re.DOTALL)
+                if json_match:
+                    steps_data = json.loads(json_match.group())
+                    if isinstance(steps_data, list):
+                        return [str(step) for step in steps_data]
+                        
+            # Fallback to simple steps if parsing fails
+            return ["Continue gathering RFQ requirements", "Add more detailed specifications"]
+            
+        except Exception as e:
+            print(f"⚠️ Next steps generation failed: {e}")
+            return ["Continue refining RFQ requirements"]
