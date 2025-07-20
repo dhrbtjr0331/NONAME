@@ -56,7 +56,7 @@ def get_data_extraction_prompt(message: str, current_data: dict) -> str:
     from .base import format_data_for_prompt, format_json_instruction
     
     current_data_str = format_data_for_prompt(current_data, "Current RFQ Data")
-    
+    print(f"🔍 DEBUG: {current_data_str} in get_data_extraction_prompt")
     extraction_fields = """Extract ANY new or updated RFQ information from the user message. Look for:
 - Product/component names and specifications
 - Quantities (numbers with units)  
