@@ -18,6 +18,15 @@ from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
+def get_extraction_llm():
+    """Get LLM specifically configured for extraction tasks"""
+    provider = get_llm_provider()
+    # Configure for extraction - no system prompts that encourage conversation
+    if hasattr(provider, 'temperature'):
+        provider.temperature = 0 # More deterministic
+
+    return provider
+
 def get_llm_provider():
     """
     Factory function to get the appropriate LLM provider based on settings

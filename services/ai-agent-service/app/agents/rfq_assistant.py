@@ -10,7 +10,7 @@ from app.prompts.rfq_assistant import (
     get_next_question_prompt,
     get_next_steps_prompt
 )
-from app.services.ai_providers.factory import get_llm_provider
+from app.services.ai_providers.factory import get_llm_provider, get_extraction_llm
 
 class RFQAssistant(BaseAgent):
     """RFQ-specific agent that inherits generic workflow from BaseAgent"""
@@ -20,7 +20,8 @@ class RFQAssistant(BaseAgent):
         super().__init__("RFQ Assistant", "rfq", llm)
         
         # Create separate clean LLM instance for extraction tasks
-        self.extraction_llm = get_llm_provider()
+        self.extraction_llm = get_extraction_llm()
+
         print("🔧 DEBUG: Created separate extraction LLM instance")
     
     # IMPLEMENT ABSTRACT METHODS - RFQ-SPECIFIC
@@ -39,6 +40,8 @@ class RFQAssistant(BaseAgent):
         # Enhance state with intelligent context analysis
         await self._analyze_message_context(latest_message.content, state)
         
+        print(f"🔍 DEBUG: message context analyzed: {state["domain_data"]}")
+
         return state
     
     async def _analyze_message_context(self, message: str, state: AgentState) -> None:
@@ -63,7 +66,8 @@ class RFQAssistant(BaseAgent):
                 state["domain_data"]["procurement_stage"] = context_data["stage"]
             if context_data.get("style"):
                 state["domain_data"]["communication_style"] = context_data["style"]
-                
+            
+
         except Exception as e:
             # Fallback to simple urgency detection
             message_lower = message.lower()
@@ -134,12 +138,11 @@ MESSAGE: "{message}"
 EXTRACT: product names, quantities, timelines, budgets, specifications
 
 RETURN ONLY JSON like: {{"product_name": "found product", "quantity": 123, "application": "use case"}}.
-I REPEAT!!! RETURN ONLY JSON FORMAT. YOU CANNOT MAKE CONVERSTAION WITH THE USER. ONLY RETURN JSON.
 
 JSON:"""
             
             extraction_messages = [
-                SystemMessage(content="Extract data and return JSON only. No conversation."),
+                SystemMessage(content=extraction_prompt),
                 HumanMessage(content=simple_extraction_message)
             ]
             
