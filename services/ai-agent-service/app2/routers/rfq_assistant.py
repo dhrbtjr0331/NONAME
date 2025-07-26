@@ -2,9 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 import uuid
 import structlog
 
-from langchain_anthropic import ChatAnthropic
-
 from app.agents.rfq_assistant import RFQAssistant
+from app.services.ai_providers.factory import get_llm_provider, get_provider_info
 from app.config.settings import settings
 from app.models.rfq_assistant import (
     RFQChatResquest,
@@ -17,18 +16,16 @@ logger = structlog.get_logger()
 
 router = APIRouter()
 
+# Global agent instance (in production, you'd use dependency injection)
+_rfq_agent = None
+
 def get_rfq_agent() -> RFQAssistant:
     """Get or create RFQ agent instance"""
-    llm = ChatAnthropic(
-        anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        model=settings.ANTHROPIC_MODEL,
-        temperature=0.7,
-        max_tokens=settings.MAX_TOKENS,
-        timeout=None,
-        max_retries=2,   
-    )  # Automatically selects appropriate provider
-    rfq_agent = RFQAssistant(llm=llm)
-    return rfq_agent
+    global _rfq_agent
+    if _rfq_agent is None:
+        llm = get_llm_provider()  # Automatically selects appropriate provider
+        _rfq_agent = RFQAssistant(llm=llm)
+    return _rfq_agent
 
 @router.post("/rfq", response_model=RFQChatResponse)
 async def chat_with_rfq_assistant(

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # AI Provider Configuration
-    AI_PROVIDER: str = "anthropic"  # Options: mock, openai, anthropic, bedrock
+    AI_PROVIDER: str = "mock"  # Options: mock, openai, anthropic, bedrock
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     

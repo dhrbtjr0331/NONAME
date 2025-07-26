@@ -83,6 +83,19 @@ class AnthropicProvider:
             "status": "configured" if settings.ANTHROPIC_API_KEY else "missing_key"
         }
 
+    def get_llm_with_structured_output(self, schema: Dict[str, Any]):
+        """
+        Get LLM instance with structured output configuration
+        
+        Args:
+            schema: JSON schema for structured output
+            
+        Returns:
+            Configured LLM instance
+        """
+        return self.llm.with_structured_output(schema)
+    
+    
 # Factory function for easy instantiation
 def get_anthropic_llm(model_name: str = None, temperature: float = None) -> AnthropicProvider:
     """

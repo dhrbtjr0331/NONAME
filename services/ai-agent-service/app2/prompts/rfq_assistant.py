@@ -50,35 +50,43 @@ Remember: Your goal is creating RFQs that will attract quality supplier response
 # =============================================================================
 # DATA EXTRACTION PROMPTS
 # =============================================================================
-from app.models.rfq_assistant_schema import RfqDataSchema
 
-def get_data_extraction_prompt(message: str) -> str:
+def get_data_extraction_prompt(message: str, current_data: dict) -> str:
     """Generate prompt for extracting RFQ data from user message"""
+    from .base import format_data_for_prompt, format_json_instruction
     
-    # Get schema description for the prompt
-    schema_fields = []
-    for field_name, field_info in RfqDataSchema.model_fields.items():
-        schema_fields.append(f"- {field_name}: {field_info.description}")
+    current_data_str = format_data_for_prompt(current_data, "Current RFQ Data")
     
-    schema_description = "\n".join(schema_fields)
+    extraction_fields = """Extract ANY new or updated RFQ information from the user message. Look for:
+- Product/component names and specifications
+- Quantities (numbers with units)  
+- Timeline/delivery requirements
+- Budget/price ranges
+- Quality standards/certifications
+- Urgency indicators
+- Technical specifications
+- Industry/application context
+
+Use these field names in your JSON response:
+- product_name: specific product/component name
+- quantity: numeric quantity
+- quantity_unit: unit (pieces, tons, etc.)
+- timeline: delivery timeframe
+- budget_range: budget/price information
+- specifications: technical specs
+- quality_standards: quality requirements
+- urgency: urgency level (high/medium/low)
+- application: intended use/industry
+- additional_requirements: other specific needs"""
     
-    prompt = f"""Extract RFQ (Request for Quote) data from the following user message and return it in the specified structured format.
-
-User message: "{message}"
-
-Please extract the following information if available in the message:
-{schema_description}
-
-Instructions:
-- Only extract information that is explicitly mentioned or can be reasonably inferred
-- Leave fields as null/None if the information is not provided
-- For list fields (technical_specifications, quality_requirements, required_certifications), extract as arrays
-- For numeric fields, extract as numbers (not strings)
-- For date fields, keep as strings in a standard format
-
-Return the extracted data in the structured format."""
+    json_instruction = format_json_instruction(extraction_fields)
     
-    return prompt
+    return f"""You are an expert at extracting RFQ (Request for Quotation) information from user messages.
+
+{current_data_str}
+New User Message: "{message}"
+
+{json_instruction}"""
 
 # =============================================================================
 # CONTEXT ANALYSIS PROMPTS
