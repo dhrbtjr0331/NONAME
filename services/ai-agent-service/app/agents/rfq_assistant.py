@@ -45,8 +45,11 @@ class RFQAssistant(BaseAgent):
             extracted_data = extraction_result.model_dump()
             print("EXTRACTED_DATA: ", extracted_data)
 
-            # Update domain data with extracted values
-            state["domain_data"].update(extracted_data)
+            # Update domain data with extracted values, but only for non-None values
+            # This preserves existing data from previous messages
+            for key, value in extracted_data.items():
+                if value is not None:
+                    state["domain_data"][key] = value
 
         except Exception as e:
             print(f"Error extracting RFQ data: {e}")

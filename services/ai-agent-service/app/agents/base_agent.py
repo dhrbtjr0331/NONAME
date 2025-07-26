@@ -18,12 +18,14 @@ class AgentState(TypedDict):
     session_id: str
     next_action: Optional[str]
 
+session_memory = MemorySaver()
+
 class BaseAgent(ABC):
     
     def __init__(self, agent_name: str, llm=None):
         self.agent_name = agent_name
         self.llm = llm
-        self.memory = MemorySaver()
+        self.memory = session_memory
     
     # ABSTRACT METHODS - Each agent MUST implement these
     @abstractmethod
