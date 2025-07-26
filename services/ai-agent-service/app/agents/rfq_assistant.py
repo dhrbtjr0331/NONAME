@@ -1,10 +1,10 @@
 from typing import Dict, Any, List
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
 from langgraph.graph import END, StateGraph
 
 from .base_agent import BaseAgent, AgentState
 from app.models.rfq_assistant_schema import RfqDataSchema
-from app.prompts.rfq_assistant import get_data_extraction_prompt
+from app.prompts.rfq_assistant import get_data_extraction_prompt, get_next_question_prompt
 
 
 class RFQAssistant(BaseAgent):
@@ -31,16 +31,19 @@ class RFQAssistant(BaseAgent):
             state["domain_data"] = {}
 
         # Initialize llm model that provides structured output
-        llm_model = self.llm.get_llm_with_structured_output(RfqDataSchema)
+        llm_model = self.llm.with_structured_output(RfqDataSchema)
 
-        system_prompt = get_data_extraction_prompt(latest_message.content, RfqDataSchema)
+        system_prompt = get_data_extraction_prompt(latest_message.content)
 
         try:
             # Invoke LLM to extract structured data
-            extraction_result = await llm_model.ainvoke({
-                "messages": [SystemMessage(content=system_prompt)]
-            })
+            extraction_result = await llm_model.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=latest_message.content)
+            ])
+
             extracted_data = extraction_result.model_dump()
+            print("EXTRACTED_DATA: ", extracted_data)
 
             # Update domain data with extracted values
             state["domain_data"].update(extracted_data)
@@ -55,15 +58,40 @@ class RFQAssistant(BaseAgent):
     async def generate_response_node(self, state: AgentState) -> AgentState:
         """Generate response based on processed input - DOMAIN SPECIFIC"""
         
+        # Extract latest message content
+        for i in range(len(state["messages"]) - 1, -1, -1):
+            if isinstance(state["messages"][i], HumanMessage):
+                latest_message = state["messages"][i]
+                break
+        
+        if not latest_message:
+            return state
+        
+        # Get context of last ten messages
+        context_window = self._get_context_window(state["messages"], window_size=10)
+
+        # If no messages, return empty state
+        if not context_window:
+            state["messages"].append(AIMessage(content="I don't see your query. What would you like to know?"))
+            return state
+
+        system_prompt = get_next_question_prompt(state["domain_data"], context_window)
+        
         # Generate response based on the current state
-        response_content = "Thank you for your RFQ. We will process it and get back to you shortly."
-        
-        # Create AI message with the response
-        ai_message = AIMessage(content=response_content)
-        
-        # Append to messages
-        state["messages"].append(ai_message)
-        
+        try:
+            # Invoke LLM to extract a response with next question
+            response = await self.llm.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=latest_message.content)
+            ])
+            1
+            state["messages"].append(AIMessage(content=response.content))
+
+        except Exception as e:
+            print(f"Error generating response: {e}")
+            # Fallback response in case of error
+            state["messages"].append(AIMessage(content="I'm here to assist you! What would you like to know?"))
+
         return state
 
     def build_graph(self) -> StateGraph:
@@ -81,6 +109,21 @@ class RFQAssistant(BaseAgent):
         workflow.add_edge("generate_response", END)
         
         return workflow.compile(checkpointer=self.memory)
+
+    def _get_context_window(self, messages: List[BaseMessage], window_size: int = 10) -> List[BaseMessage]:
+        """Get the last N messages for context window"""
+        if not messages:
+            return []
+
+        # Always include system message if it exists at the beginning
+        system_messages = [msg for msg in messages[:1] if isinstance(msg, SystemMessage)]
+
+        # Get the last window_size messages (excluding system messages from count)
+        non_system_messages = [msg for msg in messages if not isinstance(msg, SystemMessage)]
+        recent_messages = non_system_messages[-window_size:] if len(non_system_messages) > window_size else non_system_messages
+
+        # Combine: system message(s) first, then recent conversation
+        return system_messages + recent_messages
 
     async def chat(self, message: str, session_id: str, domain_data: Dict[str, Any] = None, user_id: str = None) -> Dict[str, Any]:
         """Main chat interface - SAME FOR ALL AGENTS"""
@@ -115,7 +158,7 @@ class RFQAssistant(BaseAgent):
             "response": result["messages"][-1].content if result["messages"] else "I'm here to help!",
             "domain_data": result["domain_data"],
             "session_id": session_id,
-            "agent_type": self.agent_type,
+            "agent_name": self.agent_name,
             "message_count": len(result["messages"])
         }
     
@@ -132,7 +175,7 @@ class RFQAssistant(BaseAgent):
                     "messages": existing_state.values.get("messages", []),
                     "domain_data": existing_state.values.get("domain_data", {}),
                     "user_id": existing_state.values.get("user_id"),
-                    "agent_type": existing_state.values.get("agent_type", self.agent_type),
+                    "agent_name": existing_state.values.get("agent_name", self.agent_name),
                     "next_action": existing_state.values.get("next_action", None),
                 }
         except Exception:

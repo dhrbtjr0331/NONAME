@@ -19,6 +19,13 @@ router = APIRouter()
 
 def get_rfq_agent() -> RFQAssistant:
     """Get or create RFQ agent instance"""
+    
+    # Fix the Pydantic model definition issue
+    try:
+        ChatAnthropic.model_rebuild()
+    except Exception:
+        pass  # In case it's already rebuilt or not needed
+    
     llm = ChatAnthropic(
         anthropic_api_key=settings.ANTHROPIC_API_KEY,
         model=settings.ANTHROPIC_MODEL,
@@ -26,10 +33,9 @@ def get_rfq_agent() -> RFQAssistant:
         max_tokens=settings.MAX_TOKENS,
         timeout=None,
         max_retries=2,   
-    )  # Automatically selects appropriate provider
+    )
     rfq_agent = RFQAssistant(llm=llm)
     return rfq_agent
-
 @router.post("/rfq", response_model=RFQChatResponse)
 async def chat_with_rfq_assistant(
     request: RFQChatResquest,

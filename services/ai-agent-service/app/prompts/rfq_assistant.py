@@ -110,7 +110,17 @@ Return JSON with detected context:
 
 def get_next_question_prompt(rfq_data: dict, conversation_context: list) -> str:
     """Generate prompt for determining the best next question to ask"""
-    context_str = "\n".join(conversation_context[-6:]) if conversation_context else "No previous conversation"
+    # Convert message objects to strings for context
+    if conversation_context:
+        context_messages = []
+        for msg in conversation_context[-6:]:
+            if hasattr(msg, 'content'):
+                context_messages.append(f"{msg.__class__.__name__}: {msg.content}")
+            else:
+                context_messages.append(str(msg))
+        context_str = "\n".join(context_messages)
+    else:
+        context_str = "No previous conversation"
     
     return f"""You are an expert RFQ assistant. Based on the current RFQ data and conversation context, determine the BEST next question to ask.
 
@@ -170,7 +180,17 @@ JSON Response:"""
 
 def get_summary_generation_prompt(rfq_data: dict, conversation_summary: list) -> str:
     """Generate prompt for creating comprehensive RFQ summary"""
-    conversation_str = "\n".join(conversation_summary) if conversation_summary else "No conversation history"
+    # Convert message objects to strings for context
+    if conversation_summary:
+        context_messages = []
+        for msg in conversation_summary:
+            if hasattr(msg, 'content'):
+                context_messages.append(f"{msg.__class__.__name__}: {msg.content}")
+            else:
+                context_messages.append(str(msg))
+        conversation_str = "\n".join(context_messages)
+    else:
+        conversation_str = "No conversation history"
     
     return f"""Generate a comprehensive, professional RFQ summary based on the collected data and conversation.
 
