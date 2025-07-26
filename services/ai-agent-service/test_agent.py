@@ -62,12 +62,12 @@ async def test_rfq_agent():
             result = await agent.chat(
                 message=scenario['message'],
                 session_id=session_id,
-                rfq_data=scenario['rfq_data'],
+                domain_data=scenario['rfq_data'],
                 user_id="test-user"
             )
             
             print(f"🤖 Agent: {result['response']}")
-            print(f"📊 RFQ Updates: {result['rfq_updates']}")
+            print(f"📊 RFQ Updates: {result['domain_data']}")
             
         except Exception as e:
             print(f"❌ Error: {e}")

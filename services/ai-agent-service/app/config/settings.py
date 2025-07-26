@@ -10,9 +10,12 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # AI Provider Configuration
-    AI_PROVIDER: str = "mock"  # Options: mock, openai, bedrock
+    AI_PROVIDER: str = "anthropic"  # Options: mock, openai, anthropic, bedrock
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
+    
+    # Anthropic Configuration
+    ANTHROPIC_MODEL: str = "claude-3-haiku-20240307"  # haiku, sonnet, opus
     
     # AWS Configuration (for Bedrock)
     AWS_REGION: str = "us-east-1"

@@ -1,23 +1,17 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Dict, Any
 import structlog
 
 from app.config.settings import settings
+from app.models.base_agent import (
+    AgentInfo,
+    AgentListResponse,
+    AgentCapabilityRequest,
+    AgentCapabilityResponse
+)
 
 logger = structlog.get_logger()
 
 router = APIRouter()
-
-class AgentInfo(BaseModel):
-    name: str
-    description: str
-    capabilities: List[str]
-    status: str
-
-class AgentListResponse(BaseModel):
-    agents: List[AgentInfo]
-    total: int
 
 @router.get("/", response_model=AgentListResponse)
 async def list_available_agents():
@@ -52,15 +46,6 @@ async def list_available_agents():
     except Exception as e:
         logger.error("Error listing agents", error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to list agents: {str(e)}")
-
-class AgentCapabilityRequest(BaseModel):
-    agent_name: str
-    task_description: str
-
-class AgentCapabilityResponse(BaseModel):
-    can_handle: bool
-    confidence_score: float
-    suggested_approach: str
 
 @router.post("/capability-check", response_model=AgentCapabilityResponse)
 async def check_agent_capability(request: AgentCapabilityRequest):

@@ -1,43 +1,44 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Dict, Any, Optional
 import uuid
 import structlog
 
+from langchain_anthropic import ChatAnthropic
+
 from app.agents.rfq_assistant import RFQAssistant
-from app.services.ai_providers.simple_mock import get_simple_mock_llm
 from app.config.settings import settings
+from app.models.rfq_assistant import (
+    RFQChatResquest,
+    RFQChatResponse,
+    RFQSummaryRequest,
+    RFQSummaryResponse
+)
 
 logger = structlog.get_logger()
 
 router = APIRouter()
 
-# Global agent instance (in production, you'd use dependency injection)
-_rfq_agent = None
-
 def get_rfq_agent() -> RFQAssistant:
     """Get or create RFQ agent instance"""
-    global _rfq_agent
-    if _rfq_agent is None:
-        llm = get_simple_mock_llm()  # Start with simple mock, can switch to real LLM later
-        _rfq_agent = RFQAssistant(llm=llm)
-    return _rfq_agent
-
-class ChatRequest(BaseModel):
-    message: str
-    session_id: Optional[str] = None
-    user_id: Optional[str] = None
-    rfq_data: Optional[Dict[str, Any]] = None
-
-class ChatResponse(BaseModel):
-    response: str
-    session_id: str
-    rfq_updates: Dict[str, Any]
-    agent_name: str
-
-@router.post("/rfq", response_model=ChatResponse)
+    
+    # Fix the Pydantic model definition issue
+    try:
+        ChatAnthropic.model_rebuild()
+    except Exception:
+        pass  # In case it's already rebuilt or not needed
+    
+    llm = ChatAnthropic(
+        anthropic_api_key=settings.ANTHROPIC_API_KEY,
+        model=settings.ANTHROPIC_MODEL,
+        temperature=0.7,
+        max_tokens=settings.MAX_TOKENS,
+        timeout=None,
+        max_retries=2,   
+    )
+    rfq_agent = RFQAssistant(llm=llm)
+    return rfq_agent
+@router.post("/rfq", response_model=RFQChatResponse)
 async def chat_with_rfq_assistant(
-    request: ChatRequest,
+    request: RFQChatResquest,
     agent: RFQAssistant = Depends(get_rfq_agent)
 ):
     """Chat with the RFQ assistant"""
@@ -56,7 +57,7 @@ async def chat_with_rfq_assistant(
         result = await agent.chat(
             message=request.message,
             session_id=session_id,
-            rfq_data=request.rfq_data or {},
+            domain_data=request.rfq_data or {},
             user_id=request.user_id
         )
         
@@ -66,24 +67,16 @@ async def chat_with_rfq_assistant(
             response_length=len(result["response"])
         )
         
-        return ChatResponse(
+        return RFQChatResponse(
             response=result["response"],
             session_id=session_id,
-            rfq_updates=result["rfq_updates"],
+            rfq_updates=result["domain_data"],
             agent_name="RFQ Assistant"
         )
         
     except Exception as e:
         logger.error("Error processing RFQ chat", error=str(e), session_id=request.session_id)
         raise HTTPException(status_code=500, detail=f"Failed to process chat: {str(e)}")
-
-class RFQSummaryRequest(BaseModel):
-    session_id: str
-
-class RFQSummaryResponse(BaseModel):
-    summary: str
-    rfq_data: Dict[str, Any]
-    completeness_score: float
 
 @router.post("/rfq/summary", response_model=RFQSummaryResponse)
 async def get_rfq_summary(
@@ -92,23 +85,23 @@ async def get_rfq_summary(
 ):
     """Get a summary of the current RFQ data for a session"""
     try:
-        # In a real implementation, you'd retrieve the session data from storage
-        # For now, we'll return a placeholder
+        logger.info("Getting RFQ summary", session_id=request.session_id)
         
-        # This would typically retrieve the conversation state from the agent's memory
-        rfq_data = {}  # Placeholder - would get from agent memory/database
-        
-        summary = agent.get_rfq_summary(rfq_data)
+        # Get full RFQ summary from conversation history
+        summary_data = await agent.get_rfq_summary(request.session_id)
         
         # Calculate completeness score
-        required_fields = ["product_name", "quantity", "timeline", "specifications"]
+        required_fields = ["product_name", "quantity", "timeline", "budget_range"]
+        rfq_data = summary_data.get("rfq_data", {})
         completed_fields = sum(1 for field in required_fields if rfq_data.get(field))
-        completeness_score = completed_fields / len(required_fields)
+        completeness_score = completed_fields / len(required_fields) if required_fields else 0
         
         return RFQSummaryResponse(
-            summary=summary,
+            summary=summary_data.get("summary", "No RFQ data available"),
             rfq_data=rfq_data,
-            completeness_score=completeness_score
+            completeness_score=completeness_score,
+            conversation_length=summary_data.get("conversation_length", 0),
+            next_steps=summary_data.get("next_steps", [])
         )
         
     except Exception as e:
@@ -118,8 +111,10 @@ async def get_rfq_summary(
 @router.get("/health")
 async def chat_health_check():
     """Health check for chat service"""
+    provider_info = get_provider_info()
     return {
         "status": "healthy",
         "service": "chat",
-        "agent_provider": settings.AI_PROVIDER
+        "ai_provider": settings.AI_PROVIDER,
+        "provider_info": provider_info
     }

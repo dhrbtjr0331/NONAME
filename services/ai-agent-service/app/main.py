@@ -4,7 +4,7 @@ import structlog
 import os
 from contextlib import asynccontextmanager
 
-from app.routers import chat, agents
+from app.routers import base_agent, rfq_assistant
 from app.config.settings import settings
 
 logger = structlog.get_logger()
@@ -33,8 +33,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
-app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
+app.include_router(base_agent.router, prefix="/api/v1/base-agent", tags=["base_agent"])
+app.include_router(rfq_assistant.router, prefix="/api/v1/rfq-assistant", tags=["rfq_assistant"])
 
 @app.get("/")
 async def root():
