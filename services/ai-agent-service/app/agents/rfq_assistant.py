@@ -22,7 +22,6 @@ class RFQAssistant(BaseAgent):
         # Create separate clean LLM instance for extraction tasks
         self.extraction_llm = get_extraction_llm()
 
-        print("🔧 DEBUG: Created separate extraction LLM instance")
     
     # IMPLEMENT ABSTRACT METHODS - RFQ-SPECIFIC
     
@@ -40,7 +39,6 @@ class RFQAssistant(BaseAgent):
         # Enhance state with intelligent context analysis
         await self._analyze_message_context(latest_message.content, state)
         
-        print(f"🔍 DEBUG: message context analyzed: {state["domain_data"]}")
 
         return state
     
@@ -77,38 +75,25 @@ class RFQAssistant(BaseAgent):
     
     async def update_domain_data(self, state: AgentState) -> AgentState:
         """Extract RFQ data from conversation - RFQ SPECIFIC"""
-        print("🔍 DEBUG: update_domain_data called!")
-        print(f"🔍 DEBUG: Current state messages count: {len(state.get('messages', []))}")
-        print(f"🔍 DEBUG: Current domain_data: {state.get('domain_data', {})}")
         
         if not state["messages"]:
-            print("❌ DEBUG: No messages in state, returning early")
             return state
         
         # Get the latest user message
         user_messages = [msg for msg in state["messages"] if isinstance(msg, HumanMessage)]
-        print(f"🔍 DEBUG: Found {len(user_messages)} user messages")
         
         if not user_messages:
-            print("❌ DEBUG: No user messages found, returning early")
             return state
         
         latest_user_message = user_messages[-1].content
-        print(f"🔍 DEBUG: Latest user message: '{latest_user_message}'")
         
         # LLM-POWERED RFQ DATA EXTRACTION
-        print("🔍 DEBUG: About to call _extract_rfq_data_with_llm...")
         extracted_rfq_data = await self._extract_rfq_data_with_llm(latest_user_message, state["domain_data"])
-        print(f"🔍 DEBUG: Extraction returned: {extracted_rfq_data}")
         
         # Update domain_data with RFQ-specific information
         if extracted_rfq_data:
-            print(f"🔍 DEBUG: Updating domain_data with: {extracted_rfq_data}")
             state["domain_data"].update(extracted_rfq_data)
             print(f"🔍 LLM Extracted RFQ data: {extracted_rfq_data}")
-            print(f"🔍 DEBUG: Updated domain_data now: {state['domain_data']}")
-        else:
-            print("❌ DEBUG: No extracted data to update")
         
         return state
     
@@ -121,14 +106,8 @@ class RFQAssistant(BaseAgent):
     async def _extract_rfq_data_with_llm(self, message: str, current_data: Dict[str, Any]) -> Dict[str, Any]:
         """Use LLM to intelligently extract RFQ data from user message"""
         extraction_prompt = get_data_extraction_prompt(message, current_data)
-        
-        print(f"🔍 DEBUG: Starting RFQ extraction for message: '{message[:100]}...'")
-        print(f"🔍 DEBUG: Current data: {current_data}")
-        
         try:
             # Use LLM for intelligent extraction with CLEAR task-specific context
-            print("🔍 DEBUG: Calling LLM for extraction...")
-            print(f"🔍 DEBUG: Extraction prompt preview: '{extraction_prompt[:200]}...'")
             
             # SIMPLIFIED: Direct extraction request with minimal prompt contamination
             simple_extraction_message = f"""TASK: Extract RFQ data from this message and return ONLY JSON format.
@@ -146,51 +125,27 @@ JSON:"""
                 HumanMessage(content=simple_extraction_message)
             ]
             
-            print("🔧 DEBUG: Using SIMPLIFIED extraction approach")
             extraction_result = await self.extraction_llm.ainvoke({"messages": extraction_messages})
             
-            print(f"🔍 DEBUG: Raw LLM response: '{extraction_result}'")
-            print(f"🔍 DEBUG: Response type: {type(extraction_result)}")
-            print(f"🔍 DEBUG: Response length: {len(str(extraction_result))}")
-
             # Parse JSON response
             try:
-                print("🔍 DEBUG: Attempting direct JSON parsing...")
                 extracted_data = json.loads(extraction_result)
-                print(f"🔍 DEBUG: Successfully parsed JSON: {extracted_data}")
                 if isinstance(extracted_data, dict):
-                    print(f"✅ DEBUG: Returning extracted data: {extracted_data}")
                     return extracted_data
-                else:
-                    print(f"❌ DEBUG: Parsed data is not dict, type: {type(extracted_data)}")
             except json.JSONDecodeError as json_err:
-                print(f"❌ DEBUG: Direct JSON parsing failed: {json_err}")
                 # Fallback: try to find JSON in response
                 import re
-                print("🔍 DEBUG: Attempting regex JSON extraction...")
                 json_match = re.search(r'\{.*\}', extraction_result, re.DOTALL)
                 if json_match:
                     json_content = json_match.group()
-                    print(f"🔍 DEBUG: Found JSON pattern: '{json_content}'")
-                    try:
+
                         extracted_data = json.loads(json_content)
-                        print(f"🔍 DEBUG: Regex extraction successful: {extracted_data}")
                         if isinstance(extracted_data, dict):
-                            print(f"✅ DEBUG: Returning regex-extracted data: {extracted_data}")
                             return extracted_data
-                    except json.JSONDecodeError as regex_json_err:
-                        print(f"❌ DEBUG: Regex JSON parsing also failed: {regex_json_err}")
-                else:
-                    print("❌ DEBUG: No JSON pattern found in response")
-                        
-            print("❌ DEBUG: All parsing attempts failed, returning empty dict")
             return {}  # Fallback to empty if parsing fails
             
         except Exception as e:
-            print(f"⚠️ DEBUG: LLM extraction failed with exception: {e}")
-            print(f"⚠️ DEBUG: Exception type: {type(e)}")
             import traceback
-            print(f"⚠️ DEBUG: Full traceback: {traceback.format_exc()}")
             return {}  # Graceful fallback
     
     async def _determine_next_question_with_llm(self, rfq_data: Dict[str, Any], conversation_context: List[str]) -> str:
