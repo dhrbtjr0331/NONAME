@@ -1,4 +1,5 @@
-import coreAPI from './api';
+import { aiAgentAPI, coreAPI } from './api';
+
 
 export const authService = {
   login: async (email, password) => {
