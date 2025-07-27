@@ -1,7 +1,7 @@
-import coreAPI from './api';
+import { coreAPI, aiAgentAPI } from './api';
 
 export const rfqService = {
-  // Manufacturer functions
+  // Manufacturer functions; CORE API
   createRFQ: async (rfqData) => {
     const response = await coreAPI.post('/rfqs/', rfqData);
     return response.data;
@@ -29,6 +29,12 @@ export const rfqService = {
 
   getQuotesForRFQ: async (rfqId) => {
     const response = await coreAPI.get(`/quotes/rfq/${rfqId}`);
+    return response.data;
+  },
+
+  // Manufacturer functions; AI AGENT API
+  submitAiQuery: async () => {
+    const response = await aiAgentAPI.post('/api/v1/rfq-assistant/rfq');
     return response.data;
   },
 

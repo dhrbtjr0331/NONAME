@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { rfqService } from '../../services/rfq';
+import { rfqAssistantService } from '../../services/rfqAssistant';
 import Card from '../common/Card';
 import Input from '../common/Input';
 import Button from '../common/Button';
+import RFQAssistantSidebar from './RFQAssistantSidebar';
 
 const CreateRFQ = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  
+  // RFQ Assistant states
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+  const [userId] = useState('test-manufacturer-03-072625'); // This would come from auth context in real app
+  // Generate session ID on component mount
+  useEffect(() => {
+    const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setSessionId(newSessionId);
+  }, []);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -34,6 +49,136 @@ const CreateRFQ = () => {
       ...formData,
       [name]: type === 'number' ? parseInt(value) || '' : value
     });
+  };
+
+  // Helper function to update form data from RFQ updates
+  const updateFormFromRFQUpdates = (rfqUpdates) => {
+    const updates = {};
+    
+    // Direct field mappings
+    if (rfqUpdates.unit) {
+      updates.unit = rfqUpdates.unit;
+    }
+    
+    if (rfqUpdates.min_price_per_unit !== undefined) {
+      updates.target_price_min = rfqUpdates.min_price_per_unit.toString();
+    }
+    
+    if (rfqUpdates.max_price_per_unit !== undefined) {
+      updates.target_price_max = rfqUpdates.max_price_per_unit.toString();
+    }
+    
+    if (rfqUpdates.currency) {
+      updates.currency = rfqUpdates.currency;
+    }
+    
+    if (rfqUpdates.quantity !== undefined) {
+      updates.quantity = rfqUpdates.quantity.toString();
+    }
+    
+    if (rfqUpdates.product_category) {
+      updates.product_category = rfqUpdates.product_category;
+    }
+    
+    if (rfqUpdates.priority) {
+      updates.priority = rfqUpdates.priority.toUpperCase();
+    }
+    
+    if (rfqUpdates.delivery_location) {
+      updates.delivery_location = rfqUpdates.delivery_location;
+    }
+    
+    if (rfqUpdates.shipping_terms) {
+      updates.shipping_terms = rfqUpdates.shipping_terms;
+    }
+    
+    if (rfqUpdates.max_suppliers !== undefined) {
+      updates.max_suppliers = rfqUpdates.max_suppliers.toString();
+    }
+    
+    // Schema field name mappings to UI field names
+    if (rfqUpdates.product_name) {
+      updates.title = rfqUpdates.product_name;
+    }
+    
+    if (rfqUpdates.product_description) {
+      updates.description = rfqUpdates.product_description;
+    }
+    
+    if (rfqUpdates.quote_deadline) {
+      // Convert to datetime-local format if needed
+      updates.quote_deadline = rfqUpdates.quote_deadline;
+    }
+    
+    if (rfqUpdates.delivery_deadline) {
+      // Convert to datetime-local format if needed
+      updates.delivery_deadline = rfqUpdates.delivery_deadline;
+    }
+    
+    // Handle array fields by joining them
+    if (rfqUpdates.technical_specifications && Array.isArray(rfqUpdates.technical_specifications)) {
+      updates.technical_specs = rfqUpdates.technical_specifications.join('\n');
+    }
+    
+    if (rfqUpdates.quality_requirements && Array.isArray(rfqUpdates.quality_requirements)) {
+      updates.quality_requirements = rfqUpdates.quality_requirements.join('\n');
+    }
+    
+    if (rfqUpdates.required_certifications && Array.isArray(rfqUpdates.required_certifications)) {
+      updates.certifications_required = rfqUpdates.required_certifications.join(', ');
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+    }
+  };
+
+  // RFQ Assistant message handler
+  const handleSendMessage = async (message) => {
+    if (!sessionId || assistantLoading) return;
+    
+    // Add user message to chat
+    const userMessage = {
+      type: 'user',
+      content: message,
+      timestamp: new Date().toISOString()
+    };
+    
+    setChatMessages(prev => [...prev, userMessage]);
+    setAssistantLoading(true);
+    
+    try {
+      const response = await rfqAssistantService.sendMessage(message, sessionId, userId);
+      
+      // Add assistant response to chat
+      const assistantMessage = {
+        type: 'assistant',
+        content: response.response,
+        timestamp: new Date().toISOString()
+      };
+      
+      setChatMessages(prev => [...prev, assistantMessage]);
+      
+      // Update form fields if rfq_updates are present
+      if (response.rfq_updates && Object.keys(response.rfq_updates).length > 0) {
+        updateFormFromRFQUpdates(response.rfq_updates);
+      }
+      
+    } catch (error) {
+      console.error('Error sending message to RFQ Assistant:', error);
+      const errorMessage = {
+        type: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   const handleSubmit = async (e) => {
@@ -70,6 +215,23 @@ const CreateRFQ = () => {
 
   return (
     <div className="container">
+      {/* RFQ Assistant Toggle Button */}
+      <Button
+        className={`assistant-toggle ${sidebarOpen ? 'active' : ''}`}
+        onClick={toggleSidebar}
+        variant={sidebarOpen ? 'success' : 'primary'}
+      >
+        {sidebarOpen ? '💬 Close Assistant' : '🤖 RFQ Assistant'}
+      </Button>
+      
+      {/* RFQ Assistant Sidebar */}
+      <RFQAssistantSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        messages={chatMessages}
+        onSendMessage={handleSendMessage}
+        loading={assistantLoading}
+      />
       <h1>Create New RFQ</h1>
       
       <Card title="RFQ Details">

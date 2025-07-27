@@ -131,14 +131,23 @@ Recent Conversation Context:
 {context_str}
 
 RFQ Completion Checklist:
-- Product/component name and specifications
-- Quantity and units
-- Delivery timeline
-- Budget/price expectations  
-- Quality standards or certifications
-- Technical specifications
-- Intended application/industry
-- Special requirements
+- product_name: Optional[str] = Field(None, description="name of the product that the user is requesting for quote")
+- product_description: Optional[str] = Field(None, description="description of the product that the user is requesting for quote")
+- product_category: Optional[str] = Field(None, description="category of the product that the user is requesting for quote")
+- priority: Optional[str] = Field(None, description="priority of the request (high, medium, low)")
+- quantity: Optional[int] = Field(None, description="quantity of the product that the user is requesting for quote")
+- unit: Optional[str] = Field(None, description="unit of measurement for the quantity (e.g., pieces, kg, liters)")
+- max_suppliers: Optional[int] = Field(None, description="maximum number of suppliers that submit the quote")
+- min_price_per_unit: Optional[float] = Field(None, description="minimum price per unit that the user is willing to pay")
+- max_price_per_unit: Optional[float] = Field(None, description="maximum price per unit that the user is willing to pay")
+- currency: Optional[str] = Field(None, description="currency of the prices (e.g., USD, EUR)")
+- quote_deadline: Optional[str] = Field(None, description="deadline for the quote submission")
+- delivery_deadline: Optional[str] = Field(None, description="deadline for the product delivery")
+- delivery_location: Optional[str] = Field(None, description="location where the product should be delivered")
+- shipping_terms: Optional[str] = Field(None, description="terms of shipping (e.g., FOB, CIF)")
+- technical_specifications: Optional[List[str]] = Field(None, description="technical specifications of the product in a list")
+- quality_requirements: Optional[List[str]] = Field(None, description="quality requirements for the product in a list")
+- required_certifications: Optional[List[str]] = Field(None, description="certifications required for the product in a list")
 
 Guidelines:
 1. Ask about the MOST IMPORTANT missing information first
@@ -146,8 +155,27 @@ Guidelines:
 3. Ask only ONE focused question
 4. If most info is collected, ask about refinements or additional needs
 5. Don't repeat questions already answered
+6. If the user specifically says that he/she is not going to provide certain field nformation, then update that field information as "N/A" instead of keeping it a null value
 
 Return ONLY the next question to ask (no explanation):"""
+
+
+# =============================================================================
+# HTML GENERATION PROMPTS
+# =============================================================================
+def get_html_generation_prompt(rfq_data: dict) -> str:
+    prompt = f"""
+Generate a professional HTML document for an RFQ (Request for Quotation) using this data:
+{rfq_data}
+
+Requirements:
+- Include proper CSS styling for professional appearance
+- Use tables for structured data
+- Make it print-friendly
+- Include all available RFQ information
+"""
+    return prompt
+
 
 # =============================================================================
 # NEXT STEPS ANALYSIS PROMPTS
