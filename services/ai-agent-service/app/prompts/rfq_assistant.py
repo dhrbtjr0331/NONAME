@@ -178,31 +178,6 @@ Requirements:
 
 
 # =============================================================================
-# NEXT STEPS ANALYSIS PROMPTS
-# =============================================================================
-
-def get_next_steps_prompt(rfq_data: dict, conversation_length: int) -> str:
-    """Generate prompt for suggesting actionable next steps"""
-    return f"""Analyze this RFQ data and suggest actionable next steps for the user.
-
-RFQ Data:
-{rfq_data}
-
-Conversation Length: {conversation_length} messages
-
-Provide 2-5 specific, actionable next steps. Consider:
-- What critical information is still missing?
-- Is the RFQ ready for supplier outreach?
-- What refinements or clarifications are needed?
-- Should they add technical specifications?
-- Are there industry-specific considerations?
-
-Return a JSON array of strings, each being a specific next step.
-Example: ["Add technical specifications for material grade", "Specify quality certifications required", "Ready to publish RFQ to suppliers"]
-
-JSON Response:"""
-
-# =============================================================================
 # SUMMARY GENERATION PROMPTS
 # =============================================================================
 
