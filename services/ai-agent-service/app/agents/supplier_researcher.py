@@ -29,7 +29,7 @@ class ResearchPhase(Enum):
     EVALUATION = "evaluation"
     COMPLETE = "complete"
 
-class SupplierResearchAgent:
+class SupplierResearchAgent(BaseAgent):
     """Supplier Research Agent using generic AgentState"""
     
     def __init__(self, llm=None):
@@ -429,30 +429,30 @@ class SupplierResearchAgent:
         
         return state
 
-# USAGE WITH GENERIC AgentState
-async def find_suppliers_for_rfq(rfq_data: Dict[str, Any], session_id: str, user_id: str = None) -> Dict[str, Any]:
-    """Main entry point using generic AgentState"""
-    
-    agent = SupplierResearchAgent(llm=your_llm_instance)
-    graph = agent.build_graph()
-    
-    # Initialize generic state with supplier research domain data
-    initial_state = AgentState(
-        messages=[HumanMessage(content="Find suppliers for this RFQ")],
-        domain_data=agent.initialize_domain_data(rfq_data),
-        user_id=user_id,
-        session_id=session_id,
-        next_action=None
-    )
-    
-    result = await graph.ainvoke(initial_state)
-    
-    # Extract results from domain_data
-    return {
-        "suppliers": result["domain_data"]["potential_suppliers"],
-        "search_summary": result["messages"][-1].content,
-        "session_id": session_id
-    }
+    # USAGE WITH GENERIC AgentState
+    async def find_suppliers_for_rfq(self, rfq_data: Dict[str, Any], session_id: str, user_id: str = None) -> Dict[str, Any]:
+        """Main entry point using generic AgentState"""
+        
+        agent = SupplierResearchAgent(llm=self.llm)
+        graph = agent.build_graph()
+        
+        # Initialize generic state with supplier research domain data
+        initial_state = AgentState(
+            messages=[HumanMessage(content="Find suppliers for this RFQ")],
+            domain_data=self.initialize_domain_data(rfq_data),
+            user_id=user_id,
+            session_id=session_id,
+            next_action=None
+        )
+        
+        result = await graph.ainvoke(initial_state)
+        
+        # Extract results from domain_data
+        return {
+            "suppliers": result["domain_data"]["potential_suppliers"],
+            "search_summary": result["messages"][-1].content,
+            "session_id": session_id
+        }
     # Example output:
     # {
     #   "suppliers": [
