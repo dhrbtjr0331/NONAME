@@ -20,11 +20,11 @@ router = APIRouter()
 def get_supplier_research_agent() -> SupplierResearchAgent:
     """Get or create Supplier Research agent instance"""
     
-    # Fix the Pydantic model definition issue
+    # Rebuild the Pydantic model for ChatAnthropic to address potential issues with model validation
     try:
         ChatAnthropic.model_rebuild()
     except Exception:
-        pass  # In case it's already rebuilt or not needed
+        pass  # Ignore errors if the model is already rebuilt or rebuilding is unnecessary
     
     llm = ChatAnthropic(
         anthropic_api_key=settings.ANTHROPIC_API_KEY,
