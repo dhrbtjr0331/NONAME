@@ -19,6 +19,32 @@ class RFQAssistant(BaseAgent):
         super().__init__("RFQ Assistant", llm)
 
 
+    def build_graph(self) -> StateGraph:
+        """Build LangGraph workflow"""
+
+        workflow = StateGraph(AgentState)
+        
+        # Add nodes - same workflow for all agents
+        workflow.add_node("update_data", self.update_domain_data_node)
+        workflow.add_node("generate_response", self.generate_response_node)
+        workflow.add_node("generate_rfq_pdf", self.generate_rfq_pdf_node)
+        
+        # Add edges - same flow for all agents
+        workflow.set_entry_point("update_data")
+        workflow.add_conditional_edges(
+            "update_data",
+            self.has_full_schema,  # Check if domain data is complete
+            {  # Name returned by route_joke : Name of next node to visit
+                "Full": "generate_rfq_pdf",
+                "Need more information": "generate_response",
+            },
+        )
+        workflow.add_edge("generate_rfq_pdf", END)
+        workflow.add_edge("generate_response", END)
+
+        return workflow.compile(checkpointer=self.memory)
+    
+    
     async def update_domain_data_node(self, state: AgentState) -> AgentState:
         """Extract and update domain-specific data - DOMAIN SPECIFIC"""
 
@@ -161,34 +187,6 @@ class RFQAssistant(BaseAgent):
             return "Full"
         else:
             return "Need more information"
-        
-
-    def build_graph(self) -> StateGraph:
-        """Build LangGraph workflow"""
-
-        workflow = StateGraph(AgentState)
-        
-        # Add nodes - same workflow for all agents
-        workflow.add_node("update_data", self.update_domain_data_node)
-        workflow.add_node("generate_response", self.generate_response_node)
-        workflow.add_node("generate_rfq_pdf", self.generate_rfq_pdf_node)
-        
-        # Add edges - same flow for all agents
-        workflow.set_entry_point("update_data")
-        workflow.add_conditional_edges(
-            "update_data",
-            self.has_full_schema,  # Check if domain data is complete
-            {  # Name returned by route_joke : Name of next node to visit
-                "Full": "generate_rfq_pdf",
-                "Need more information": "generate_response",
-            },
-        )
-        workflow.add_edge("generate_rfq_pdf", END)
-        workflow.add_edge("generate_response", END)
-
-
-        
-        return workflow.compile(checkpointer=self.memory)
     
 
     def _generate_html_with_llm(self, rfq_data: Dict[str, Any]) -> str:
