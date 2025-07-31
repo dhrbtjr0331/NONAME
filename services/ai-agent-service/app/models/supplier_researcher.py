@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class SupplierInfo(BaseModel):
     """Individual supplier information"""
     company_name: str = Field(..., description="Company name")
-    score: float = Field(..., ge=0, le=10, description="Supplier score (0-100)")
+    score: float = Field(..., ge=0, le=100, description="Supplier score (0-100)")
     reasoning: Optional[str] = Field(None, description="Reasoning for the score")
     location: Optional[str] = Field(None, description="Company location")
     website: Optional[str] = Field(None, description="Company website")
