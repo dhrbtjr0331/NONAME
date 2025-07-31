@@ -1,68 +1,19 @@
 """
 RFQ Assistant Prompts Collection
-
-This file contains all prompts used by the RFQ Assistant agent for:
-- System prompts
-- Data extraction prompts  
-- Context analysis prompts
-- Question generation prompts
-- Next steps analysis prompts
-
-Centralizing prompts here makes them easier to:
-- Maintain and update
-- Version control
-- A/B test different versions
-- Reuse across similar agents
 """
 
-# =============================================================================
-# SYSTEM PROMPT - Core agent personality and instructions
-# =============================================================================
-
-SYSTEM_PROMPT = """You are an expert RFQ (Request for Quotation) assistant with deep knowledge of B2B procurement.
-
-Your role is to help manufacturers create comprehensive, actionable RFQs by intelligently gathering:
-
-🎯 CORE REQUIREMENTS:
-- Product specifications and technical details
-- Precise quantities and units
-- Timeline and delivery requirements  
-- Budget ranges and payment terms
-- Quality standards and certifications
-- Industry-specific compliance needs
-
-🧠 APPROACH:
-- Ask intelligent follow-up questions based on user context
-- Recognize industry terminology and technical specifications
-- Suggest relevant requirements the user might not have considered
-- Adapt questioning style to user expertise level
-- Focus on gathering actionable, procurement-ready information
-
-💬 CONVERSATION STYLE:
-- Be conversational and consultative
-- Ask ONE focused question at a time
-- Build on previous answers intelligently
-- Offer helpful suggestions when appropriate
-- Confirm understanding of complex requirements
-
-Remember: Your goal is creating RFQs that will attract quality supplier responses."""
-
-# =============================================================================
-# DATA EXTRACTION PROMPTS
-# =============================================================================
 from app.models.rfq_assistant_schema import RfqDataSchema
 
 def get_data_extraction_prompt(message: str) -> str:
     """Generate prompt for extracting RFQ data from user message"""
-    
-    # Get schema description for the prompt
+
     schema_fields = []
     for field_name, field_info in RfqDataSchema.model_fields.items():
         schema_fields.append(f"- {field_name}: {field_info.description}")
     
     schema_description = "\n".join(schema_fields)
     
-    prompt = f"""Extract RFQ (Request for Quote) data from the following user message and return it in the specified structured format.
+    return f"""Extract RFQ (Request for Quote) data from the following user message and return it in the specified structured format.
 
 User message: "{message}"
 
@@ -77,12 +28,7 @@ Instructions:
 - For date fields, keep as strings in a standard format
 
 Return the extracted data in the structured format."""
-    
-    return prompt
 
-# =============================================================================
-# CONTEXT ANALYSIS PROMPTS
-# =============================================================================
 
 def get_context_analysis_prompt(message: str) -> str:
     """Generate prompt for analyzing message context and user signals"""
@@ -104,9 +50,6 @@ Return JSON with detected context:
   "style": "technical/casual/formal"
 }}"""
 
-# =============================================================================
-# QUESTION GENERATION PROMPTS
-# =============================================================================
 
 def get_next_question_prompt(rfq_data: dict, conversation_context: list) -> str:
     """Generate prompt for determining the best next question to ask"""
@@ -160,9 +103,6 @@ Guidelines:
 Return ONLY the next question to ask (no explanation):"""
 
 
-# =============================================================================
-# HTML GENERATION PROMPTS
-# =============================================================================
 def get_html_generation_prompt(rfq_data: dict) -> str:
     prompt = f"""
 Generate a professional HTML document for an RFQ (Request for Quotation) using this data:
@@ -176,10 +116,6 @@ Requirements:
 """
     return prompt
 
-
-# =============================================================================
-# SUMMARY GENERATION PROMPTS
-# =============================================================================
 
 def get_summary_generation_prompt(rfq_data: dict, conversation_summary: list) -> str:
     """Generate prompt for creating comprehensive RFQ summary"""
@@ -215,9 +151,6 @@ Format the summary as a professional RFQ document that suppliers can easily unde
 
 Professional RFQ Summary:"""
 
-# =============================================================================
-# UTILITY FUNCTIONS
-# =============================================================================
 
 def format_rfq_data_for_prompt(rfq_data: dict) -> str:
     """Format RFQ data for inclusion in prompts"""
@@ -231,9 +164,6 @@ def format_rfq_data_for_prompt(rfq_data: dict) -> str:
     
     return "\n".join(formatted) if formatted else "No RFQ data collected yet."
 
-# =============================================================================
-# PROMPT VERSIONING
-# =============================================================================
 
 PROMPT_VERSION = "1.0.0"
 LAST_UPDATED = "2025-07-19"

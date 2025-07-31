@@ -11,30 +11,18 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Base
 from langgraph.graph import END, StateGraph
 
 from .base_agent import BaseAgent, AgentState
-from app.models.rfq_assistant_schema import RfqDataSchema
-from app.prompts.rfq_assistant import get_data_extraction_prompt, get_next_question_prompt, get_html_generation_prompt
+from app.models.supplier_researcher_schema import SupplierResearchSchema, ResearchPhase
+from app.prompts.supplier_researcher import (
+    get_rfq_analysis_prompt,
+    get_research_planning_prompt,
+)
 
-# GENERIC AgentState - works for ANY agent type
-class AgentState(TypedDict):
-    """Generic state for any LangGraph agent"""
-    messages: List[BaseMessage]
-    domain_data: Dict[str, Any]  # Generic domain data (could be RFQ, supplier info, etc.)
-    user_id: Optional[str]
-    session_id: str
-    next_action: Optional[str]
-
-class ResearchPhase(Enum):
-    PLANNING = "planning"
-    DISCOVERY = "discovery" 
-    EVALUATION = "evaluation"
-    COMPLETE = "complete"
 
 class SupplierResearchAgent(BaseAgent):
     """Supplier Research Agent using generic AgentState"""
     
     def __init__(self, llm=None):
-        self.llm = llm
-        self.agent_name = "Supplier Research Agent"
+        super().__init__("Supplier_Researcher", llm)
     
     def initialize_domain_data(self, rfq_data: Dict[str, Any]) -> Dict[str, Any]:
         """Initialize domain_data with supplier research specific structure"""
@@ -45,6 +33,7 @@ class SupplierResearchAgent(BaseAgent):
             # Research state
             "current_phase": ResearchPhase.PLANNING.value,
             "research_plan": None,
+            "rfq_analysis": None,
             
             # Discovery results
             "supplier_candidates": [],
@@ -127,22 +116,7 @@ class SupplierResearchAgent(BaseAgent):
         rfq_data = state["domain_data"]["rfq_data"]
         
         # Use LLM to analyze RFQ and extract supplier requirements
-        analysis_prompt = f"""
-        Analyze this RFQ data and extract key supplier requirements:
-        
-        RFQ Data: {rfq_data}
-        
-        Extract:
-        - Product/component specifications
-        - Manufacturing processes needed
-        - Required certifications
-        - Geographic preferences
-        - Quantity/volume requirements
-        - Industry/application context
-        - Key search keywords for supplier discovery
-        
-        Return structured analysis focusing on what type of suppliers we need to find.
-        """
+        analysis_prompt = get_rfq_analysis_prompt(rfq_data)
         
         try:
             response = await self.llm.ainvoke([
@@ -168,21 +142,7 @@ class SupplierResearchAgent(BaseAgent):
         
         rfq_analysis = state["domain_data"].get("rfq_analysis", "")
         
-        planning_prompt = f"""
-        Based on this RFQ analysis, create a targeted supplier research plan:
-        
-        Analysis: {rfq_analysis}
-        
-        Create a research plan with:
-        - Search keywords and terms
-        - Relevant industry codes (NAICS, SIC)
-        - Geographic search scope
-        - Supplier database priorities
-        - Manufacturing capability keywords
-        - Certification requirements to search for
-        
-        Format as structured plan for systematic supplier discovery.
-        """
+        planning_prompt = get_research_planning_prompt(rfq_analysis)
         
         try:
             response = await self.llm.ainvoke([
@@ -325,10 +285,10 @@ class SupplierResearchAgent(BaseAgent):
         Supplier Candidates: {supplier_candidates}
         
         For each supplier, evaluate:
-        - Geographic compatibility (0-10)
-        - Manufacturing capability match (0-10)
-        - Size/scale appropriateness (0-10)
-        - Certification alignment (0-10)
+        - Geographic compatibility (0-100)
+        - Manufacturing capability match (0-100)
+        - Size/scale appropriateness (0-100)
+        - Certification alignment (0-100)
         
         Return evaluation results with reasoning.
         """
@@ -433,8 +393,7 @@ class SupplierResearchAgent(BaseAgent):
     async def find_suppliers_for_rfq(self, rfq_data: Dict[str, Any], session_id: str, user_id: str = None) -> Dict[str, Any]:
         """Main entry point using generic AgentState"""
         
-        agent = SupplierResearchAgent(llm=self.llm)
-        graph = agent.build_graph()
+        graph = self.build_graph()
         
         # Initialize generic state with supplier research domain data
         initial_state = AgentState(
@@ -453,6 +412,7 @@ class SupplierResearchAgent(BaseAgent):
             "search_summary": result["messages"][-1].content,
             "session_id": session_id
         }
+    
     # Example output:
     # {
     #   "suppliers": [

@@ -20,3 +20,4 @@ class SupplierResearchSchema(BaseModel):
     potential_suppliers: List[Dict] = Field(None, description = "List of potential suppliers identified during the research process. Ex. [{"company_name": "ABC Corp", "location": "Detroit", "score": 8.5}]")
     max_suppliers_to_find: int = Field(50, description="Maximum number of suppliers to find during the research process")
     target_suppliers: int = Field(30, description="Target number of suppliers to evaluate and shortlist")
+
