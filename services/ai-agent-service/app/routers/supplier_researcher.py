@@ -146,12 +146,20 @@ async def get_research_status(
     try:
         logger.info("Getting research status", session_id=session_id)
         
-        # This would need to be implemented in the base agent to retrieve session state
-        # For now, return a placeholder response
+        # Retrieve the session state from the agent
+        session_state = agent.get_session_state(session_id)
+        
+        if not session_state:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Session with ID {session_id} not found"
+            )
+        
         return {
             "session_id": session_id,
-            "status": "active",
-            "message": "Status endpoint would require session state management implementation"
+            "status": session_state.get("status", "unknown"),
+            "progress": session_state.get("progress", 0),
+            "message": session_state.get("message", "No additional information available")
         }
         
     except Exception as e:
