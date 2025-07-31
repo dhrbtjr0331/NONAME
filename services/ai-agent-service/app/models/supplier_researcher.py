@@ -1,4 +1,4 @@
-# app/models/supplier_research.py
+# app/models/supplier_researcher.py
 
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
